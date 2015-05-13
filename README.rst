@@ -2,7 +2,7 @@
 btctxstore
 ##########
 
-A simple library to store/retrieve information in bitcoin transactions using OP_RETURN.
+A library to read/write data to bitcoin transactions as nulldata outputs.
 
 ============                                                                                                    
 Installation                                                                                                    
@@ -11,3 +11,6 @@ Installation
 ::                                                                               
                                                                                  
   pip install btctxstore  
+
+
+
