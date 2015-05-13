@@ -4,7 +4,7 @@
 # License: MIT (see LICENSE file)
 
 
-import sanitize
+import re
 import apigen
 from pycoin.tx.script import tools
 from pycoin.tx.Tx import Tx 
@@ -15,30 +15,43 @@ from pycoin.tx.TxOut import TxOut
 class BtcTxStore(apigen.Definition):
     """ TODO doc string. """
 
-    def __init__(self, testnet=False):
-        self.testnet = testnet
-
     def write(self, tx, data):
+        if len(data) > 40:
+            raise Exception("Data exceeds maximum of 40 bytes!")
+        if self._get_nulldata_output(tx):
+            raise Exception("Transaction already has a nulldata output!")
+        # TODO validate transaction is unsigned
+
         script_text = "OP_RETURN %s" % b2h(data)
         script_bin = tools.compile(script_text)
         tx.txs_out.append(TxOut(0, script_bin)) 
+
+    def _get_nulldata_output(self, tx):
+        for out in tx.txs_out:
+            if re.match("^OP_RETURN", tools.disassemble(out.script)):
+                return out
+        return None
+
+    def read(self, tx):
+        out = self._get_nulldata_output(tx)
+        if not out:
+            return ""
+        return h2b(tools.disassemble(out.script)[10:])
 
     @apigen.command()
     def write_bin(self, rawtxhex, datahex):
         """ TODO doc string. """
         tx = Tx.tx_from_hex(rawtxhex)
         data = h2b(datahex)
-        if len(data) > 40:
-            raise Exception("Data exceeds maximum of 40 bytes!")
         self.write(tx, data)
-        # FIXME only allow one nulldata output
         return tx.as_hex()
 
     @apigen.command()
     def read_bin(self, rawtxhex):
         """ TODO doc string. """
-
-        return "TODO read_bin"
+        tx = Tx.tx_from_hex(rawtxhex)
+        data = self.read(tx)
+        return b2h(data)
 
 
 if __name__ == "__main__":                                                                                      
