@@ -7,7 +7,7 @@
 import re
 import apigen
 from pycoin.tx.script import tools
-from pycoin.tx.Tx import Tx 
+from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b
 from pycoin.tx.TxOut import TxOut
 
@@ -25,7 +25,7 @@ class BtcTxStore(apigen.Definition):
 
         script_text = "OP_RETURN %s" % b2h(data)
         script_bin = tools.compile(script_text)
-        tx.txs_out.append(TxOut(0, script_bin)) 
+        tx.txs_out.append(TxOut(0, script_bin))
 
         # TODO validate transaction
 

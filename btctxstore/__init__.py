@@ -7,13 +7,3 @@
 from btctxstore.api import BtcTxStore
 
 
-_api = BtcTxStore()
-
-
-write = _api.write
-write_bin = _api.write_bin
-
-read = _api.read
-read_bin = _api.read_bin
-
-

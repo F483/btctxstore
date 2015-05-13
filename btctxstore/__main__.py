@@ -8,6 +8,6 @@ import apigen
 from btctxstore.api import BtcTxStore
 
 
-if __name__ == "__main__":                                                                                      
+if __name__ == "__main__":
     apigen.run(BtcTxStore)
 
