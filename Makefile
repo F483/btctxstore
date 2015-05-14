@@ -20,19 +20,18 @@ clean:
 
 
 devsetup: clean
-	virtualenv -p /usr/bin/python2 env
-	source env/bin/activate
-	python setup.py develop
+	@virtualenv -p /usr/bin/python2 env
+	@env/bin/python setup.py develop
 
 
-test: devsetup
-	# TODO add static analisys 
-	# TODO add lint 
-	# TODO add tests
+test:
+	# TODO add static analisys
+	# TODO add lint
+	env/bin/python tests.py
 
 
 publish: test
-	source env/bin/activate
-	python setup.py register sdist upload
+	env/bin/python setup.py register sdist upload
 
 
+# import pudb; pu.db # set break point

@@ -5,6 +5,7 @@
 
 
 import re
+import sanitize
 import apigen
 from pycoin.tx.script import tools
 from pycoin.tx.Tx import Tx
@@ -13,20 +14,13 @@ from pycoin.tx.TxOut import TxOut
 
 
 class BtcTxStore(apigen.Definition):
-    "btctxstore: read/write data to bitcoin transactions as nulldata outputs."
+    """Bitcoin nulldata output io library."""
 
-    def write(self, tx, data):
-        if len(data) > 40:
-            raise Exception("Data exceeds maximum of 40 bytes!")
+    def write(self, tx, nulldataoutput):
         if self._get_nulldata_output(tx):
             raise Exception("Transaction already has a nulldata output!")
-
         # TODO validate transaction is unsigned
-
-        script_text = "OP_RETURN %s" % b2h(data)
-        script_bin = tools.compile(script_text)
-        tx.txs_out.append(TxOut(0, script_bin))
-
+        tx.txs_out.append(nulldataoutput)
         # TODO validate transaction
 
     def _get_nulldata_output(self, tx):
@@ -44,16 +38,37 @@ class BtcTxStore(apigen.Definition):
     @apigen.command()
     def write_bin(self, rawtxhex, hexdata):
         """Writes <hexdata> as new nulldata output in <rawtxhex>."""
-        tx = Tx.tx_from_hex(rawtxhex)
-        data = h2b(hexdata)
-        self.write(tx, data)
+        tx = sanitize.tx(rawtxhex)
+        nulldataoutput = sanitize.nulldataoutput(hexdata)
+        self.write(tx, nulldataoutput)
         return tx.as_hex()
 
     @apigen.command()
     def read_bin(self, rawtxhex):
         """Returns binary nulldata from <rawtxhex> as hexdata."""
-        tx = Tx.tx_from_hex(rawtxhex)
+        tx = sanitize.tx(rawtxhex)
         data = self.read(tx)
         return b2h(data)
+
+    @apigen.command()
+    def new_rawtx(self, txins, txouts, locktime="0", testnet="False"):
+        """Create unsigned raw tx with given txins/txouts as json data.
+        <txins>: '[{"txid" : hexdata, "index" : number}, ...]'
+        <txouts>: '[{"address" : hexdata, "value" : satoshis}, ...]'
+        """
+
+        testnet = sanitize.flag(testnet)
+        locktime = sanitize.positiveinteger(locktime)
+        txins = sanitize.txins(txins)
+        txouts = sanitize.txouts(testnet, txouts)
+        tx = Tx(1, txins, txouts, locktime)
+        return tx.as_hex()
+
+    @apigen.command()
+    def sign_rawtx(self, rawtxhex, privatekeys):
+        """Sign <rawtxhex> with  given <privatekeys> as json data.
+        <privatekeys>: '[privatekeyhex, ...]'
+        """
+        return "Sorry this feature is not implemented yet."
 
 
