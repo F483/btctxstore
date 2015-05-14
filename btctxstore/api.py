@@ -16,59 +16,84 @@ from pycoin.tx.TxOut import TxOut
 class BtcTxStore(apigen.Definition):
     """Bitcoin nulldata output io library."""
 
-    def write(self, tx, nulldataoutput):
-        if self._get_nulldata_output(tx):
-            raise Exception("Transaction already has a nulldata output!")
-        # TODO validate transaction is unsigned
-        tx.txs_out.append(nulldataoutput)
-        # TODO validate transaction
+    def __init__(self, testnet="False"):
+        self.testnet = sanitize.flag(testnet)
 
-    def _get_nulldata_output(self, tx):
+    def _get_nulldata_txout(self, tx):
         for out in tx.txs_out:
             if re.match("^OP_RETURN", tools.disassemble(out.script)):
                 return out
         return None
 
+    def write(self, tx, nulldataoutput):
+        if self._get_nulldata_txout(tx):
+            raise Exception("Transaction already has a nulldata output!")
+        # TODO validate transaction is unsigned
+        tx.txs_out.append(nulldataoutput)
+        # TODO validate transaction
+
     def read(self, tx):
-        out = self._get_nulldata_output(tx)
+        out = self._get_nulldata_txout(tx)
         if not out:
             return ""
         return h2b(tools.disassemble(out.script)[10:])
 
     @apigen.command()
-    def write_bin(self, rawtxhex, hexdata):
-        """Writes <hexdata> as new nulldata output in <rawtxhex>."""
-        tx = sanitize.tx(rawtxhex)
+    def writebin(self, rawtx, hexdata):
+        """Writes <hexdata> as new nulldata output in <rawtx>."""
+        tx = sanitize.tx(rawtx)
         nulldataoutput = sanitize.nulldataoutput(hexdata)
         self.write(tx, nulldataoutput)
         return tx.as_hex()
 
     @apigen.command()
-    def read_bin(self, rawtxhex):
-        """Returns binary nulldata from <rawtxhex> as hexdata."""
-        tx = sanitize.tx(rawtxhex)
+    def readbin(self, rawtx):
+        """Returns binary nulldata from <rawtx> as hexdata."""
+        tx = sanitize.tx(rawtx)
         data = self.read(tx)
         return b2h(data)
 
     @apigen.command()
-    def new_rawtx(self, txins, txouts, locktime="0", testnet="False"):
+    def createtx(self, txins, txouts, locktime="0"):
         """Create unsigned raw tx with given txins/txouts as json data.
         <txins>: '[{"txid" : hexdata, "index" : number}, ...]'
         <txouts>: '[{"address" : hexdata, "value" : satoshis}, ...]'
         """
-
-        testnet = sanitize.flag(testnet)
         locktime = sanitize.positiveinteger(locktime)
         txins = sanitize.txins(txins)
-        txouts = sanitize.txouts(testnet, txouts)
+        txouts = sanitize.txouts(self.testnet, txouts)
         tx = Tx(1, txins, txouts, locktime)
         return tx.as_hex()
 
     @apigen.command()
-    def sign_rawtx(self, rawtxhex, privatekeys):
-        """Sign <rawtxhex> with  given <privatekeys> as json data.
+    def signtx(self, rawtx, privatekeys): # TODO test it
+        """Sign <rawtx> with  given <privatekeys> as json data.
         <privatekeys>: '[privatekeyhex, ...]'
         """
+        tx = sanitize.tx(rawtx)
+        secretexponents = sanitize.secretexponents(privatekeys)
+        hash160_lookup = build_hash160_lookup(secretexponents)
+        for txin_idx in xrange(len(tx.txs_in)):
+            previous_hash = tx.txs_in[txin_idx].previous_hash
+            previous_index = tx.txs_in[txin_idx].previous_index
+            utxo_rawtx = self.gettx(previous_hash)
+            utxo_tx = sanitize.tx(rawtx)
+            utxo = utxo_tx.txs_out[index]
+            txout_script = h2b(utxo.script)
+            tx.sign_tx_in(hash160_lookup, txin_idx, txout_script, SIGHASH_ALL)
+        return tx.as_hex()
+
+    @apigen.command()
+    def getutxos(self, address):
+        """Get current utxos for address."""
         return "Sorry this feature is not implemented yet."
 
+    @apigen.command()
+    def gettx(self, txid):
+        return "Sorry this feature is not implemented yet."
+
+    @apigen.command()
+    def publish(self, rawtx):
+        """Publish signed raw transaction to bitcoin network."""
+        return "Sorry this feature is not implemented yet."
 

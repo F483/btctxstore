@@ -17,8 +17,8 @@ from pycoin.tx.TxIn import TxIn
 class InvalidInput(Exception): pass
 
 
-def tx(rawtxhex):
-    return Tx.tx_from_hex(rawtxhex)
+def tx(rawtx):
+    return Tx.tx_from_hex(rawtx)
 
 
 def binary(hexdata):
@@ -83,5 +83,9 @@ def nulldataoutput(hexdata):
     script_bin = tools.compile(script_text)
     return TxOut(0, script_bin)
 
+
+def secretexponents(jsondata):
+    data = json.loads(jsondata)
+    return data # TODO sanitize
 
 
