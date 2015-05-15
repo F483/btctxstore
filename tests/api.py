@@ -15,7 +15,7 @@ unsignedrawtx = "0100000001ef5b2eb4b9b0c10449cbabedca45709135d457a04dabd33c1068a
 class TestIO(unittest.TestCase):
 
     def setUp(self):
-        self.api = BtcTxStore(testnet=True)
+        self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_readwrite(self):
         outputtx = self.api.writebin(unsignedrawtx, "f483")
@@ -28,7 +28,7 @@ class TestIO(unittest.TestCase):
             self.api.writebin(outputtx, "f483")
         self.assertRaises(Exception, callback)
 
-    def test_max_data(self): # TODO move to sanitize tests
+    def test_max_data(self): # TODO move to test/sanitize.py
         max_data = 40 * "aa" # fourty bytes
         self.api.writebin(unsignedrawtx, max_data)
         def callback():
@@ -40,7 +40,7 @@ class TestIO(unittest.TestCase):
 class TestCreateTx(unittest.TestCase):
 
     def setUp(self):
-        self.api = BtcTxStore(testnet=True)
+        self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_create(self):
         txins = """[
@@ -73,7 +73,7 @@ class TestCreateTx(unittest.TestCase):
 class TestGetTx(unittest.TestCase):
 
     def setUp(self):
-        self.api = BtcTxStore(testnet=True)
+        self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_gettx(self):
         txid = "6771c240340d58ff94f186fd5c332edaacf78287a707548bb4fa118446a2b6e6"
@@ -85,7 +85,7 @@ class TestGetTx(unittest.TestCase):
 class TestGetUtxos(unittest.TestCase):
 
     def setUp(self):
-        self.api = BtcTxStore(testnet=True)
+        self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_getutxos(self):
         address = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
@@ -94,6 +94,40 @@ class TestGetUtxos(unittest.TestCase):
             "txid": "e20af2349c48774eddda161b74659e3e64ad0f62794df9a2271e6baa313796f2" 
         }]
         result = self.api.getutxos(address)
+        self.assertEquals(result, expected)
+
+
+class TestSignTx(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_signtx(self):
+        txins = [{
+            "index": 1, 
+            "txid": "e20af2349c48774eddda161b74659e3e64ad0f62794df9a2271e6baa313796f2" 
+        }]
+        txouts = [{
+          "address" : "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM",
+          "value" : 17900000
+        }]
+        privatekeys = """["931qQ8CMYGL8rmqifyLDg61xhjWvD2QgX526TCcQiEs4zrhuWqe"]"""
+        rawtx = self.api.createtx(json.dumps(txins), json.dumps(txouts))
+        rawtx = self.api.writebin(rawtx, "f483")
+        #rawtx = self.api.signtx(rawtx, privatekeys)
+        #print rawtx
+
+
+class TestStore(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_store(self):
+        pks = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
+        changeaddress = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
+        result = self.api.store("f483", json.dumps(pks), changeaddress)
+        expected = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
         self.assertEquals(result, expected)
 
 

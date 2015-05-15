@@ -6,10 +6,13 @@
 
 import re
 import json
+from pycoin.key import Key
 from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
 from pycoin.tx.script import tools
 from pycoin.encoding import bitcoin_address_to_hash160_sec
+from pycoin.encoding import wif_to_secret_exponent
+from pycoin.tx.pay_to import build_hash160_lookup
 from pycoin.tx.TxOut import TxOut
 from pycoin.tx.TxIn import TxIn                                                  
 
@@ -18,6 +21,16 @@ class InvalidInput(Exception): pass
 
 
 def tx(rawtx):
+    return Tx.tx_from_hex(rawtx)
+
+
+def signedtx(rawtx):
+    # FIXME validate tx is signed
+    return Tx.tx_from_hex(rawtx)
+
+
+def unsignedtx(rawtx):
+    # FIXME validate tx is unsigned
     return Tx.tx_from_hex(rawtx)
 
 
@@ -84,8 +97,9 @@ def nulldatatxout(hexdata):
     return TxOut(0, script_bin)
 
 
-def secretexponents(jsondata):
-    data = json.loads(jsondata)
-    return data # TODO sanitize
+def secretexponents(testnet, jsondata):
+    wifs = json.loads(jsondata)
+    valid_prefixes = [b'\xef' if testnet else b'\x80']
+    return map(lambda wif: wif_to_secret_exponent(wif, valid_prefixes), wifs)
 
 

@@ -15,8 +15,9 @@ from insight import InsightService # XXX rm when added to next pycoin version
 class BtcTxStore(apigen.Definition):
     """Bitcoin nulldata output io library."""
 
-    def __init__(self, testnet="False"):
+    def __init__(self, testnet=False, dryrun=False):
         self.testnet = sanitize.flag(testnet)
+        self.dryrun = sanitize.flag(dryrun)
         if self.testnet:
             self.service = InsightService("https://test-insight.bitpay.com/")
         else:
@@ -24,17 +25,17 @@ class BtcTxStore(apigen.Definition):
 
     @apigen.command()
     def writebin(self, rawtx, hexdata):
-        """Writes <hexdata> as new nulldata output in <rawtx>."""
-        tx = sanitize.tx(rawtx)
+        """Writes <hexdata> as new nulldata output to <rawtx>."""
+        tx = sanitize.unsignedtx(rawtx)
         nulldatatxout = sanitize.nulldatatxout(hexdata)
-        tx = control.write(tx, nulldatatxout)
+        tx = control.addnulldata(tx, nulldatatxout)
         return tx.as_hex()
 
     @apigen.command()
     def readbin(self, rawtx):
-        """Returns binary nulldata from <rawtx> as hexdata."""
+        """Returns nulldata from <rawtx> as hexdata."""
         tx = sanitize.tx(rawtx)
-        data = control.read(tx)
+        data = control.readnulldata(tx)
         return b2h(data)
 
     @apigen.command()
@@ -51,18 +52,20 @@ class BtcTxStore(apigen.Definition):
 
     @apigen.command()
     def gettx(self, txid):
+        """TODO doc string"""
         txid = sanitize.txid(txid)
         tx = self.service.get_tx(txid)
         return tx.as_hex()
 
     @apigen.command()
-    def signrawtx(self, rawtx, privatekeys): # TODO test it
+    def signtx(self, rawtx, privatekeys):
         """Sign <rawtx> with  given <privatekeys> as json data.
-        <privatekeys>: '[privatekeyhex, ...]'
+        <privatekeys>: '[privatekeywif, ...]'
         """
         tx = sanitize.tx(rawtx)
-        secretexponents = sanitize.secretexponents(privatekeys)
-        return control.signtx(self.service, tx, secretexponents).as_hex()
+        secretexponents = sanitize.secretexponents(self.testnet, privatekeys)
+        tx = control.signtx(self.service, self.testnet, tx, secretexponents)
+        return tx.as_hex()
 
     @apigen.command()
     def getutxos(self, address):
@@ -71,7 +74,7 @@ class BtcTxStore(apigen.Definition):
         spendables = self.service.spendables_for_address(address)
         def reformat(spendable):
             return { 
-                "txid" : b2h_rev(spendable.tx_hash), # correct?
+                "txid" : b2h_rev(spendable.tx_hash),
                 "index" : spendable.tx_out_index
             }
         return map(reformat, spendables)
@@ -79,5 +82,27 @@ class BtcTxStore(apigen.Definition):
     @apigen.command()
     def publish(self, rawtx):
         """Publish signed raw transaction to bitcoin network."""
-        return "Sorry this feature is not implemented yet."
+        tx = sanitize.signedtx(rawtx)
+        if not self.dryrun:
+            self.service.send_tx(tx) # TODO test it
+        return b2h_rev(tx.hash())
+
+    @apigen.command()
+    def store(self, hexdata, wifs, changeaddress, fee="10000", locktime="0"):
+        """TODO doc string"""
+        nulldatatxout = sanitize.nulldatatxout(hexdata)
+        secretexponents = sanitize.secretexponents(self.testnet, wifs)
+        changeout = sanitize.txout(self.testnet, changeaddress, "0")
+        fee = sanitize.positiveinteger(fee)
+        locktime = sanitize.positiveinteger(locktime)
+        txid = control.store(self.service, self.testnet, nulldatatxout, 
+                             secretexponents, changeout, fee, locktime, 
+                             publish=(not self.dryrun))
+        return b2h_rev(txid)
+    
+    @apigen.command()
+    def retrieve(self, txid): # TODO test it
+        """TODO doc string"""
+        rawtx = self.gettx(txid)
+        return self.readbin(rawtx)
 

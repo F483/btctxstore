@@ -5,19 +5,35 @@
 
 
 import re
+from pycoin.tx.Tx import Tx
+from pycoin.encoding import hash160_sec_to_bitcoin_address
 from pycoin.tx.script import tools
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
+from pycoin.tx.pay_to import build_hash160_lookup
+from pycoin.tx import SIGHASH_ALL 
+from pycoin.tx.TxIn import TxIn                                                  
 
 
-def get_nulldata_txout(tx):
+def signtx(service, testnet, tx, secretexponents):
+    netcode = 'XTN' if testnet else 'BTC'
+    lookup = build_hash160_lookup(secretexponents)
+    for txin_idx in xrange(len(tx.txs_in)):
+        txin = tx.txs_in[txin_idx]
+        utxo_tx = service.get_tx(txin.previous_hash)
+        script = utxo_tx.txs_out[txin.previous_index].script
+        tx.sign_tx_in(lookup, txin_idx, script, SIGHASH_ALL, netcode=netcode)
+    return tx
+
+
+def getnulldata(tx):
     for out in tx.txs_out:
         if re.match("^OP_RETURN", tools.disassemble(out.script)):
             return out
     return None
 
 
-def write(tx, nulldatatxout):
-    if get_nulldata_txout(tx):
+def addnulldata(tx, nulldatatxout):
+    if getnulldata(tx):
         raise Exception("Transaction already has a nulldata output!")
     # TODO validate transaction is unsigned
     tx.txs_out.append(nulldatatxout)
@@ -25,21 +41,54 @@ def write(tx, nulldatatxout):
     return tx
 
 
-def read(tx):
-    out = get_nulldata_txout(tx)
+def readnulldata(tx):
+    out = getnulldata(tx)
     if not out:
         return ""
     return h2b(tools.disassemble(out.script)[10:])
 
 
-def signtx(service, tx, secretexponents):
-    hash160_lookup = build_hash160_lookup(secretexponents)
-    for txin_idx in xrange(len(tx.txs_in)):
-        previous_hash = tx.txs_in[txin_idx].previous_hash
-        previous_index = tx.txs_in[txin_idx].previous_index
-        utxo_tx = service.get_tx(previous_hash)
-        utxo = utxo_tx.txs_out[index]
-        txout_script = h2b(utxo.script)
-        tx.sign_tx_in(hash160_lookup, txin_idx, txout_script, SIGHASH_ALL)
-    return tx
+def findtxins(service, addresses, amount):
+    spendables = service.spendables_for_addresses(addresses)
+    txins = []
+    total = 0
+    for spendable in spendables:
+        utxo_tx = service.get_tx(spendable.tx_hash)
+        total += utxo_tx.txs_out[spendable.tx_out_index].coin_value
+        txins.append(TxIn(spendable.tx_hash, spendable.tx_out_index))
+        if total >= amount:
+            return txins, total
+    return txins, total
+
+
+def secretexponents_to_addresses(testnet, secretexponents):
+    prefix = b'\x6f' if testnet else b"\0"
+    lookup = build_hash160_lookup(secretexponents)
+    addresses = []
+    for hash160 in lookup.keys():
+        address = hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
+        addresses.append(address)
+    return addresses
+
+
+def store(service, testnet, nulldatatxout, secretexponents, 
+          changeout, fee=10000, locktime=0, publish=True):
+    
+    # txins
+    addresses = secretexponents_to_addresses(testnet, secretexponents)
+    txins, total = findtxins(service, addresses, fee)
+    if total < fee:
+        msg = "Insufficient funds! Required: %s Available: %s"
+        raise Exception(msg % (amount, total))
+
+    # txouts
+    changeout.coin_value = total - fee
+    txouts = [nulldatatxout, changeout]
+
+    # create, sign and publish tx
+    tx = Tx(1, txins, txouts, locktime)
+    tx = signtx(service, testnet, tx, secretexponents)
+    if publish:
+        service.send_tx(tx)
+    return tx.hash()
 
