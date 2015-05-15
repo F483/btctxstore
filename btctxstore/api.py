@@ -11,6 +11,7 @@ from pycoin.tx.script import tools
 from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b
 from pycoin.tx.TxOut import TxOut
+from insight import InsightService # XXX rm when added to next pycoin version
 
 
 class BtcTxStore(apigen.Definition):
@@ -18,6 +19,10 @@ class BtcTxStore(apigen.Definition):
 
     def __init__(self, testnet="False"):
         self.testnet = sanitize.flag(testnet)
+        if self.testnet:
+            self.service = InsightService("https://test-insight.bitpay.com/")
+        else:
+            self.service = InsightService("https://insight.bitpay.com/")
 
     def _get_nulldata_txout(self, tx):
         for out in tx.txs_out:
@@ -25,11 +30,11 @@ class BtcTxStore(apigen.Definition):
                 return out
         return None
 
-    def write(self, tx, nulldataoutput):
+    def write(self, tx, nulldatatxout):
         if self._get_nulldata_txout(tx):
             raise Exception("Transaction already has a nulldata output!")
         # TODO validate transaction is unsigned
-        tx.txs_out.append(nulldataoutput)
+        tx.txs_out.append(nulldatatxout)
         # TODO validate transaction
 
     def read(self, tx):
@@ -42,8 +47,8 @@ class BtcTxStore(apigen.Definition):
     def writebin(self, rawtx, hexdata):
         """Writes <hexdata> as new nulldata output in <rawtx>."""
         tx = sanitize.tx(rawtx)
-        nulldataoutput = sanitize.nulldataoutput(hexdata)
-        self.write(tx, nulldataoutput)
+        nulldatatxout = sanitize.nulldatatxout(hexdata)
+        self.write(tx, nulldatatxout)
         return tx.as_hex()
 
     @apigen.command()
@@ -66,6 +71,12 @@ class BtcTxStore(apigen.Definition):
         return tx.as_hex()
 
     @apigen.command()
+    def gettx(self, txid):
+        txid = sanitize.txid(txid)
+        tx = self.service.get_tx(txid)
+        return tx.as_hex()
+
+    @apigen.command()
     def signtx(self, rawtx, privatekeys): # TODO test it
         """Sign <rawtx> with  given <privatekeys> as json data.
         <privatekeys>: '[privatekeyhex, ...]'
@@ -76,8 +87,7 @@ class BtcTxStore(apigen.Definition):
         for txin_idx in xrange(len(tx.txs_in)):
             previous_hash = tx.txs_in[txin_idx].previous_hash
             previous_index = tx.txs_in[txin_idx].previous_index
-            utxo_rawtx = self.gettx(previous_hash)
-            utxo_tx = sanitize.tx(rawtx)
+            utxo_tx = self.service.get_tx(previous_hash)
             utxo = utxo_tx.txs_out[index]
             txout_script = h2b(utxo.script)
             tx.sign_tx_in(hash160_lookup, txin_idx, txout_script, SIGHASH_ALL)
@@ -86,10 +96,6 @@ class BtcTxStore(apigen.Definition):
     @apigen.command()
     def getutxos(self, address):
         """Get current utxos for address."""
-        return "Sorry this feature is not implemented yet."
-
-    @apigen.command()
-    def gettx(self, txid):
         return "Sorry this feature is not implemented yet."
 
     @apigen.command()

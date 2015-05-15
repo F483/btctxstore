@@ -75,7 +75,7 @@ def txouts(testnet, jsondata):
     return map(lambda x: txout(testnet, x['address'], x['value']), data)
 
 
-def nulldataoutput(hexdata):
+def nulldatatxout(hexdata):
     data = binary(hexdata)
     if len(data) > 40:
         raise Exception("Data exceeds maximum of 40 bytes!")

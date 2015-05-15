@@ -27,7 +27,7 @@ devsetup: clean
 test:
 	# TODO add static analisys
 	# TODO add lint
-	env/bin/python tests.py
+	env/bin/python tests/api.py
 
 
 publish: test
