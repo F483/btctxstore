@@ -4,13 +4,11 @@
 # License: MIT (see LICENSE file)
 
 
-import re
 import sanitize
 import apigen
-from pycoin.tx.script import tools
+import control
 from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
-from pycoin.tx.TxOut import TxOut
 from insight import InsightService # XXX rm when added to next pycoin version
 
 
@@ -24,38 +22,19 @@ class BtcTxStore(apigen.Definition):
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    def _get_nulldata_txout(self, tx):
-        for out in tx.txs_out:
-            if re.match("^OP_RETURN", tools.disassemble(out.script)):
-                return out
-        return None
-
-    def write(self, tx, nulldatatxout):
-        if self._get_nulldata_txout(tx):
-            raise Exception("Transaction already has a nulldata output!")
-        # TODO validate transaction is unsigned
-        tx.txs_out.append(nulldatatxout)
-        # TODO validate transaction
-
-    def read(self, tx):
-        out = self._get_nulldata_txout(tx)
-        if not out:
-            return ""
-        return h2b(tools.disassemble(out.script)[10:])
-
     @apigen.command()
     def writebin(self, rawtx, hexdata):
         """Writes <hexdata> as new nulldata output in <rawtx>."""
         tx = sanitize.tx(rawtx)
         nulldatatxout = sanitize.nulldatatxout(hexdata)
-        self.write(tx, nulldatatxout)
+        tx = control.write(tx, nulldatatxout)
         return tx.as_hex()
 
     @apigen.command()
     def readbin(self, rawtx):
         """Returns binary nulldata from <rawtx> as hexdata."""
         tx = sanitize.tx(rawtx)
-        data = self.read(tx)
+        data = control.read(tx)
         return b2h(data)
 
     @apigen.command()
@@ -76,17 +55,6 @@ class BtcTxStore(apigen.Definition):
         tx = self.service.get_tx(txid)
         return tx.as_hex()
 
-    def signtx(self, tx, secretexponents):
-        hash160_lookup = build_hash160_lookup(secretexponents)
-        for txin_idx in xrange(len(tx.txs_in)):
-            previous_hash = tx.txs_in[txin_idx].previous_hash
-            previous_index = tx.txs_in[txin_idx].previous_index
-            utxo_tx = self.service.get_tx(previous_hash)
-            utxo = utxo_tx.txs_out[index]
-            txout_script = h2b(utxo.script)
-            tx.sign_tx_in(hash160_lookup, txin_idx, txout_script, SIGHASH_ALL)
-        return tx
-
     @apigen.command()
     def signrawtx(self, rawtx, privatekeys): # TODO test it
         """Sign <rawtx> with  given <privatekeys> as json data.
@@ -94,7 +62,7 @@ class BtcTxStore(apigen.Definition):
         """
         tx = sanitize.tx(rawtx)
         secretexponents = sanitize.secretexponents(privatekeys)
-        return self.signtx(tx, secretexponents).as_hex()
+        return control.signtx(self.service, tx, secretexponents).as_hex()
 
     @apigen.command()
     def getutxos(self, address):
