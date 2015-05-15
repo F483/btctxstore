@@ -63,9 +63,9 @@ class InsightService(object):
         return self.get_blockheader_with_transaction_hashes(block_hash)[0].height
 
     def get_tx(self, tx_hash):
-        URL = "%s/api/tx/%s" % (self.base_url, b2h_rev(tx_hash))
+        URL = "%s/api/rawtx/%s" % (self.base_url, b2h_rev(tx_hash))
         r = json.loads(urlopen(URL).read().decode("utf8"))
-        tx = tx_from_json_dict(r)
+        tx = Tx.tx_from_hex(r['rawtx'])
         if tx.hash() == tx_hash:
             return tx
         return None
@@ -110,29 +110,3 @@ class InsightService(object):
             raise ex
 
 
-def tx_from_json_dict(r):
-    version = r.get("version")
-    lock_time = r.get("locktime")
-    txs_in = []
-    for vin in r.get("vin"):
-        if "coinbase" in vin:
-            previous_hash = b'\0' * 32
-            script = h2b(vin.get("coinbase"))
-            previous_index = 4294967295
-        else:
-            previous_hash = h2b_rev(vin.get("txid"))
-            script = tools.compile(vin.get("scriptSig").get("asm"))
-            previous_index = vin.get("vout")
-        sequence = vin.get("sequence")
-        txs_in.append(TxIn(previous_hash, previous_index, script, sequence))
-    txs_out = []
-    for vout in r.get("vout"):
-        coin_value = btc_to_satoshi(decimal.Decimal(vout.get("value")))
-        script = tools.compile(vout.get("scriptPubKey").get("asm"))
-        txs_out.append(TxOut(coin_value, script))
-    tx = Tx(version, txs_in, txs_out, lock_time)
-    bh = r.get("blockhash")
-    if bh:
-        bh = h2b_rev(bh)
-    tx.confirmation_block_hash = bh
-    return tx

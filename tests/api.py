@@ -91,7 +91,7 @@ class TestGetUtxos(unittest.TestCase):
         address = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
         expected = [{
             "index": 1, 
-            "txid": "e20af2349c48774eddda161b74659e3e64ad0f62794df9a2271e6baa313796f2" 
+            "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb" 
         }]
         result = self.api.getutxos(address)
         self.assertEquals(result, expected)
@@ -105,11 +105,11 @@ class TestSignTx(unittest.TestCase):
     def test_signtx(self):
         txins = [{
             "index": 1, 
-            "txid": "e20af2349c48774eddda161b74659e3e64ad0f62794df9a2271e6baa313796f2" 
+            "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb" 
         }]
         txouts = [{
           "address" : "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM",
-          "value" : 17900000
+          "value" : 17980000
         }]
         privatekeys = """["931qQ8CMYGL8rmqifyLDg61xhjWvD2QgX526TCcQiEs4zrhuWqe"]"""
         rawtx = self.api.createtx(json.dumps(txins), json.dumps(txouts))
@@ -127,7 +127,7 @@ class TestStore(unittest.TestCase):
         pks = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
         changeaddress = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
         result = self.api.store("f483", json.dumps(pks), changeaddress)
-        expected = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
+        expected = "6a7311a49b4e59dd3bfcaea75a114d1c3f9cb2e4dbb9b3ed99eef5846a8e1a2a"
         self.assertEquals(result, expected)
 
 

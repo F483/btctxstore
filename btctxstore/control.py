@@ -53,8 +53,7 @@ def findtxins(service, addresses, amount):
     txins = []
     total = 0
     for spendable in spendables:
-        utxo_tx = service.get_tx(spendable.tx_hash)
-        total += utxo_tx.txs_out[spendable.tx_out_index].coin_value
+        total += spendable.coin_value
         txins.append(TxIn(spendable.tx_hash, spendable.tx_out_index))
         if total >= amount:
             return txins, total
