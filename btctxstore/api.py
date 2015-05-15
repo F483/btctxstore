@@ -9,7 +9,7 @@ import sanitize
 import apigen
 from pycoin.tx.script import tools
 from pycoin.tx.Tx import Tx
-from pycoin.serialize import b2h, h2b
+from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
 from pycoin.tx.TxOut import TxOut
 from insight import InsightService # XXX rm when added to next pycoin version
 
@@ -76,13 +76,7 @@ class BtcTxStore(apigen.Definition):
         tx = self.service.get_tx(txid)
         return tx.as_hex()
 
-    @apigen.command()
-    def signtx(self, rawtx, privatekeys): # TODO test it
-        """Sign <rawtx> with  given <privatekeys> as json data.
-        <privatekeys>: '[privatekeyhex, ...]'
-        """
-        tx = sanitize.tx(rawtx)
-        secretexponents = sanitize.secretexponents(privatekeys)
+    def signtx(self, tx, secretexponents):
         hash160_lookup = build_hash160_lookup(secretexponents)
         for txin_idx in xrange(len(tx.txs_in)):
             previous_hash = tx.txs_in[txin_idx].previous_hash
@@ -91,12 +85,28 @@ class BtcTxStore(apigen.Definition):
             utxo = utxo_tx.txs_out[index]
             txout_script = h2b(utxo.script)
             tx.sign_tx_in(hash160_lookup, txin_idx, txout_script, SIGHASH_ALL)
-        return tx.as_hex()
+        return tx
+
+    @apigen.command()
+    def signrawtx(self, rawtx, privatekeys): # TODO test it
+        """Sign <rawtx> with  given <privatekeys> as json data.
+        <privatekeys>: '[privatekeyhex, ...]'
+        """
+        tx = sanitize.tx(rawtx)
+        secretexponents = sanitize.secretexponents(privatekeys)
+        return self.signtx(tx, secretexponents).as_hex()
 
     @apigen.command()
     def getutxos(self, address):
         """Get current utxos for address."""
-        return "Sorry this feature is not implemented yet."
+        address = sanitize.address(address)
+        spendables = self.service.spendables_for_address(address)
+        def reformat(spendable):
+            return { 
+                "txid" : b2h_rev(spendable.tx_hash), # correct?
+                "index" : spendable.tx_out_index
+            }
+        return map(reformat, spendables)
 
     @apigen.command()
     def publish(self, rawtx):
