@@ -18,14 +18,14 @@ class TestIO(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_readwrite(self):
-        outputtx = self.api.writebin(unsignedrawtx, "f483")
-        data = self.api.readbin(outputtx)
+        rawtx = self.api.writebin(unsignedrawtx, "f483")
+        data = self.api.readbin(rawtx)
         self.assertEquals(data, "f483")
 
     def test_only_one_nulldata_output(self):
         def callback():
-            outputtx = self.api.writebin(unsignedrawtx, "f483")
-            self.api.writebin(outputtx, "f483")
+            rawtx = self.api.writebin(unsignedrawtx, "f483") # first nulldata
+            self.api.writebin(rawtx, "f483") # writing second fails
         self.assertRaises(Exception, callback)
 
     def test_max_data(self): # TODO move to test/sanitize.py
@@ -76,8 +76,8 @@ class TestGetTx(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_gettx(self):
-        txid = "6771c240340d58ff94f186fd5c332edaacf78287a707548bb4fa118446a2b6e6"
-        expected = "0100000005fbe5e8f3e73ef35223693dbd0fb30bf736dc2845eaf9f19298553499ccc5b8ab000000006a47304402200249fb2acce22cd0aa6169af363a8f0d47b7f2ebe7cc13721bfda971cd6580e002206299aa96c623e87e786f7439e67538cd162bc66aea82f9ed8486ea2baefc5dd60121023b7a920adaa336636dbb7695f4a54a41cabe115a02da15968b60ca3f0f259abdfffffffffa298e13ab98b5a05e38309a1c9cc2c3c3c5917833766f7dd47d30097b72ef2a000000006b483045022100bfc5d9326f9f087d848d6e147813bee58e930e3651626facef4205a42c6b5c5002200531d0b4459151ca211e7e7d0fa934b0bb8d9aceed620df8402198f56a35c62501210336e3be12e8f3af99ea558ad38c6a74f734ffe4ab637260edc9074a3315f4b61fffffffffb854eeac74c0b49fb51c4796d399ad6aece93ecfded276abd3b3e2828b2dc53a000000006a47304402205a1ced715ec54a2d8de500967d7417687991aaca98de8fabe49074127ce5de1602205552d11b98e57a4d610942daf2219e7418ee00b0bb333edf5fbf8d100214073301210336e3be12e8f3af99ea558ad38c6a74f734ffe4ab637260edc9074a3315f4b61fffffffff9a77d1b1cc5a4de2fe1430d4f9eba979ddb57458936895a2f5a9c3ab66932d0c000000006b483045022100f248bcf00ac51ba379fdc54b0e416c3edc25a1384486c19ffb936b43d15251a002205bfa83197cedbb8d57bbbd24ca481225c6580d81ebb55c10fffe28c2f25e6fcb01210336e3be12e8f3af99ea558ad38c6a74f734ffe4ab637260edc9074a3315f4b61fffffffff7eed8aa0967b3b3c2e356e42625d08f19800340167ee44ce6bb914899a6318c2010000006b4830450221009518c85d81d406f79f328858d6f54ed6f2513ffa8402e1d760a3310546ae618602203e9cb55c358f5d1a47d66ac00b441ae7886b875070c96742882e1048dae42fb7012102e9b7c0513cd82c91ea07c6e9de8ad09509fd098a96c761d25d4d1add010a7c16ffffffff0360e31600000000001976a914ebaa4d22f4e3f8394d5c27affe45be744cd87d1788ace8e64900000000001976a9144cd52ad04a3b90ad6e73ac0ad13e2da1c81c930b88ac0000000000000000676a4c647b226c6162656c223a227b5c226e616d655c223a5c22e5bdb1e9948b5c222c5c22656d61696c5c223a5c227265626f726e31313238403136332e636f6d5c222c5c22746f5f656d61696c5c223a5c225c227d222c226d657373616765223a22313233227d00000000"
+        txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
+        expected = "0100000001f2963731aa6b1e27a2f94d79620fad643e9e65741b16dadd4e77489c34f20ae2010000008a473044022054d89d41e9a3df9ea6ac367e0a062bd7c65c50232ff36d1f9287cd1851c7444e022069736675af9b94340d64b2b67913c07c4fc2f24006e77ad4df5a13a26e1200350141040319ffdcba35ef3d2577cdf6f07483f4b30865f695d366f02926db1ddd0c03544150b65124baf42601945d1c848bca7970cfa29f538f4ad8cd2564b8f80bb10cffffffff020000000000000000046a02f48370811201000000001976a914f4131906b10615a61af347c56f1223ddc214f95c88ac00000000"
         result = self.api.gettx(txid)
         self.assertEquals(result, expected)
 
@@ -103,19 +103,22 @@ class TestSignTx(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_signtx(self):
-        txins = [{
-            "index": 1, 
-            "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb" 
-        }]
-        txouts = [{
+        txins = json.dumps([{
+          "index": 1, 
+          "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
+        }])
+        txouts = json.dumps([{
           "address" : "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM",
           "value" : 17980000
-        }]
-        privatekeys = """["931qQ8CMYGL8rmqifyLDg61xhjWvD2QgX526TCcQiEs4zrhuWqe"]"""
-        rawtx = self.api.createtx(json.dumps(txins), json.dumps(txouts))
+        }])
+        privatekeys = json.dumps([
+          "92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"
+        ])
+        rawtx = self.api.createtx(txins, txouts)
         rawtx = self.api.writebin(rawtx, "f483")
-        #rawtx = self.api.signtx(rawtx, privatekeys)
-        #print rawtx
+        result = self.api.signtx(rawtx, privatekeys)
+        expected = "0100000001eb27e1faa89983dcf6064015a55d5346534bf8fb2ca11f7cd004c544c3517498010000008b4830450221008326d0d915dd8d3f9bcced2d774f4a898ed2c4a4929a06c7539500ded89e92db02201542ce4beda2eb1cfdefa3d647481a2a2f38231c953bba8efbb860fe1f49981d0141040319ffdcba35ef3d2577cdf6f07483f4b30865f695d366f02926db1ddd0c03544150b65124baf42601945d1c848bca7970cfa29f538f4ad8cd2564b8f80bb10cffffffff02605a1201000000001976a914f4131906b10615a61af347c56f1223ddc214f95c88ac0000000000000000046a02f48300000000"
+        self.assertEquals(result, expected)
 
 
 class TestStore(unittest.TestCase):
@@ -124,11 +127,24 @@ class TestStore(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_store(self):
-        pks = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
+        pks = json.dumps([
+            "92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"
+        ])
         changeaddress = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
-        result = self.api.store("f483", json.dumps(pks), changeaddress)
+        result = self.api.store("f483", pks, changeaddress)
         expected = "6a7311a49b4e59dd3bfcaea75a114d1c3f9cb2e4dbb9b3ed99eef5846a8e1a2a"
         self.assertEquals(result, expected)
+
+
+class TestRetrieve(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_retrieve(self):
+        txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
+        result = self.api.retrieve(txid)
+        self.assertEquals(result, "f483")
 
 
 if __name__ == '__main__':

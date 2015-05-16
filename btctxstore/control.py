@@ -14,17 +14,6 @@ from pycoin.tx import SIGHASH_ALL
 from pycoin.tx.TxIn import TxIn                                                  
 
 
-def signtx(service, testnet, tx, secretexponents):
-    netcode = 'XTN' if testnet else 'BTC'
-    lookup = build_hash160_lookup(secretexponents)
-    for txin_idx in xrange(len(tx.txs_in)):
-        txin = tx.txs_in[txin_idx]
-        utxo_tx = service.get_tx(txin.previous_hash)
-        script = utxo_tx.txs_out[txin.previous_index].script
-        tx.sign_tx_in(lookup, txin_idx, script, SIGHASH_ALL, netcode=netcode)
-    return tx
-
-
 def getnulldata(tx):
     for out in tx.txs_out:
         if re.match("^OP_RETURN", tools.disassemble(out.script)):
@@ -46,6 +35,17 @@ def readnulldata(tx):
     if not out:
         return ""
     return h2b(tools.disassemble(out.script)[10:])
+
+
+def signtx(service, testnet, tx, secretexponents):
+    netcode = 'XTN' if testnet else 'BTC'
+    lookup = build_hash160_lookup(secretexponents)
+    for txin_idx in xrange(len(tx.txs_in)):
+        txin = tx.txs_in[txin_idx]
+        utxo_tx = service.get_tx(txin.previous_hash)
+        script = utxo_tx.txs_out[txin.previous_index].script
+        tx.sign_tx_in(lookup, txin_idx, script, SIGHASH_ALL, netcode=netcode)
+    return tx
 
 
 def findtxins(service, addresses, amount):
