@@ -4,15 +4,18 @@
 # License: MIT (see LICENSE file)
 
 
-import sanitize
-import apigen
-import control
+from __future__ import print_function
+from __future__ import unicode_literals
+
+
 from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
-from insight import InsightService # XXX rm when added to next pycoin version
+from . import sanitize
+from . import control
+from . insight import InsightService # XXX rm when added to next pycoin version
 
 
-class BtcTxStore(apigen.Definition):
+class BtcTxStore():
     """Bitcoin nulldata output io library."""
 
     def __init__(self, testnet=False, dryrun=False):
@@ -23,7 +26,6 @@ class BtcTxStore(apigen.Definition):
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    @apigen.command()
     def writebin(self, rawtx, hexdata):
         """Writes <hexdata> as new nulldata output to <rawtx>."""
         tx = sanitize.unsignedtx(rawtx)
@@ -31,14 +33,12 @@ class BtcTxStore(apigen.Definition):
         tx = control.addnulldata(tx, nulldatatxout)
         return tx.as_hex()
 
-    @apigen.command()
     def readbin(self, rawtx):
         """Returns nulldata from <rawtx> as hexdata."""
         tx = sanitize.tx(rawtx)
         data = control.readnulldata(tx)
         return b2h(data)
 
-    @apigen.command()
     def createtx(self, txins, txouts, locktime="0"):
         """Create unsigned rawtx with given txins/txouts as json data.
         <txins>: '[{"txid" : hexdata, "index" : integer}, ...]'
@@ -50,14 +50,12 @@ class BtcTxStore(apigen.Definition):
         tx = Tx(1, txins, txouts, locktime)
         return tx.as_hex()
 
-    @apigen.command()
     def gettx(self, txid):
         """Returns rawtx from <txid>."""
         txid = sanitize.txid(txid)
         tx = self.service.get_tx(txid)
         return tx.as_hex()
 
-    @apigen.command()
     def signtx(self, rawtx, privatekeys):
         """Sign <rawtx> with  given <privatekeys> as json data.
         <privatekeys>: '["privatekey_in_wif_format", ...]'
@@ -67,19 +65,17 @@ class BtcTxStore(apigen.Definition):
         tx = control.signtx(self.service, self.testnet, tx, secretexponents)
         return tx.as_hex()
 
-    @apigen.command()
     def getutxos(self, address):
         """Get current utxos for <address>."""
         address = sanitize.address(address)
         spendables = self.service.spendables_for_address(address)
         def reformat(spendable):
-            return { 
+            return {
                 "txid" : b2h_rev(spendable.tx_hash),
                 "index" : spendable.tx_out_index
             }
-        return map(reformat, spendables)
+        return list(map(reformat, spendables))
 
-    @apigen.command()
     def publish(self, rawtx):
         """Publish signed <rawtx> to bitcoin network."""
         tx = sanitize.signedtx(rawtx)
@@ -87,8 +83,7 @@ class BtcTxStore(apigen.Definition):
             self.service.send_tx(tx)
         return b2h_rev(tx.hash())
 
-    @apigen.command()
-    def store(self, hexdata, privatekeys, changeaddress, 
+    def store(self, hexdata, privatekeys, changeaddress,
               fee="10000", locktime="0"): # TODO make changeaddress optional
         """Store <hexdata> in blockchain and return new txid.
         Utxos taken from <privatekeys> and change sent to <changeaddress>.
@@ -99,12 +94,11 @@ class BtcTxStore(apigen.Definition):
         changeout = sanitize.txout(self.testnet, changeaddress, "0")
         fee = sanitize.positiveinteger(fee)
         locktime = sanitize.positiveinteger(locktime)
-        txid = control.store(self.service, self.testnet, nulldatatxout, 
-                             secretexponents, changeout, fee, locktime, 
+        txid = control.store(self.service, self.testnet, nulldatatxout,
+                             secretexponents, changeout, fee, locktime,
                              publish=(not self.dryrun))
         return b2h_rev(txid)
-    
-    @apigen.command()
+
     def retrieve(self, txid):
         """Returns nulldata stored in blockchain <txid> as hexdata."""
         rawtx = self.gettx(txid)

@@ -4,6 +4,10 @@
 # License: MIT (see LICENSE file)
 
 
+from __future__ import print_function
+from __future__ import unicode_literals
+
+
 import re
 from pycoin.tx.Tx import Tx
 from pycoin.encoding import hash160_sec_to_bitcoin_address
@@ -40,7 +44,7 @@ def readnulldata(tx):
 def signtx(service, testnet, tx, secretexponents):
     netcode = 'XTN' if testnet else 'BTC'
     lookup = build_hash160_lookup(secretexponents)
-    for txin_idx in xrange(len(tx.txs_in)):
+    for txin_idx in range(len(tx.txs_in)):
         txin = tx.txs_in[txin_idx]
         utxo_tx = service.get_tx(txin.previous_hash)
         script = utxo_tx.txs_out[txin.previous_index].script

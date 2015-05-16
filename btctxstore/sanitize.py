@@ -4,8 +4,11 @@
 # License: MIT (see LICENSE file)
 
 
+from __future__ import print_function
+from __future__ import unicode_literals
+
+
 import re
-import json
 from pycoin.key import Key
 from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
@@ -78,14 +81,12 @@ def txout(testnet, targetaddress, value):
     return TxOut(value, script_bin)
 
 
-def txins(jsondata):
-    data = json.loads(jsondata)
-    return map(lambda x: txin(x['txid'], x['index']), data)
+def txins(data):
+    return list(map(lambda x: txin(x['txid'], x['index']), data))
 
 
-def txouts(testnet, jsondata):
-    data = json.loads(jsondata)
-    return map(lambda x: txout(testnet, x['address'], x['value']), data)
+def txouts(testnet, data):
+    return list(map(lambda x: txout(testnet, x['address'], x['value']), data))
 
 
 def nulldatatxout(hexdata):
@@ -97,9 +98,8 @@ def nulldatatxout(hexdata):
     return TxOut(0, script_bin)
 
 
-def secretexponents(testnet, jsondata):
-    wifs = json.loads(jsondata)
+def secretexponents(testnet, wifs):
     valid_prefixes = [b'\xef' if testnet else b'\x80']
-    return map(lambda wif: wif_to_secret_exponent(wif, valid_prefixes), wifs)
+    return list(map(lambda x: wif_to_secret_exponent(x, valid_prefixes), wifs))
 
 

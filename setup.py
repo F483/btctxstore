@@ -30,15 +30,13 @@ setup(
     license='MIT',
     packages=find_packages(),
     download_url = DOWNLOAD_URL,
-    #test_suite="tests",
+    test_suite="tests.api",
     install_requires=[
-        'apigen == 0.1.6',
         'pycoin == 0.52'
     ],
-    tests_require=[ # TODO how to install it?
+    tests_require=[
       'ipython',
       'pudb' # import pudb; pu.db # set break point
-      # TODO lint and static analisys
     ],
     zip_safe=False
 )
