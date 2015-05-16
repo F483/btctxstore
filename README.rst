@@ -17,52 +17,50 @@ Installation
 CLI usage
 =========
 
-Write data to bitcoin transaction as nulldata new output.
-Prints new raw transaction with added output.
+Store data in bitcoin blockchain in new transaction with nulldata output.
+Prints txid of transaction with stored data.
 
 ::
 
-  python -m btctxstore write_bin <unsigned rawtx hex> <data hex>
+  python -m btctxstore store <hexdata> '["pk_in_wif_format", ...]' <change address>
 
-Read data from bitcoin transaction with nulldata output.
-Prints hex data from output.
+Read data stored in bitcoin blockchain as nulldata output.
+Prints stored data in hex format.
 
 ::
 
-  python -m btctxstore read_bin <rawtx hex>
+  python -m btctxstore retrieve <txid>
 
 
 ============
 python usage
 ============
 
-Write data to bitcoin transaction as nulldata new output.
-Prints new raw transaction with added output.
+Store data in bitcoin blockchain in new transaction with nulldata output.
+Prints txid of transaction with stored data.
+
+.. code:: python
+
+  import json
+  from btctxstore import BtcTxStore
+  api = BtcTxStore()
+
+  privatekeys = json.dumps([privatekey_in_wif_format])
+  txid = api.store(hexdata, privatekeys, changeaddress)
+  print txid
+
+
+Read data stored in bitcoin blockchain as nulldata output.
+Prints stored data in hex format.
 
 .. code:: python
 
   from btctxstore import BtcTxStore
   api = BtcTxStore()
 
-  # using hex data
-  outputrawtx = api.write_bin(unsignedrawtx, hexdata)
+  hexdata = api.retrieve(txid)
+  print hexdata
 
-  # using pycoin tx and binary data
-  api.write(pycointx, bindata)
-
-Read data from bitcoin transaction with nulldata output.
-Prints hex data from output.
-
-.. code:: python
-
-  from btctxstore import BtcTxStore
-  api = BtcTxStore()
-
-  # using hex data
-  hexdata = api.read_bin(rawtx)
-
-  # using pycoin tx and binary data
-  bindata = api.read(pycointx)
 
 
 ==============
@@ -75,27 +73,28 @@ Starting the rpc server.
 
   python -m btctxstore startserver --hostname=<hostname> --port=<port>
 
-Write data to bitcoin transaction as nulldata new output.
-Prints new raw transaction with added output.
+Store data in bitcoin blockchain in new transaction with nulldata output.
+Prints txid of transaction with stored data.
 
 .. code:: python
 
   import pyjsonrpc
   rpc = pyjsonrpc.HttpClient(url = "http://localhost:8080")
 
-  # using hex data
-  outputrawtx = rpc.write_bin(unsignedrawtx, hexdata)
+  privatekeys = json.dumps([privatekey_in_wif_format])
+  txid = rpc.store(hexdata, privatekeys, changeaddress)
+  print txid
 
-Read data from bitcoin transaction with nulldata output.
-Prints hex data from output.
+Read data stored in bitcoin blockchain as nulldata output.
+Prints stored data in hex format.
 
 .. code:: python
 
   import pyjsonrpc
   rpc = pyjsonrpc.HttpClient(url = "http://localhost:8080")
 
-  # using hex data
-  hexdata = rpc.read_bin(rawtx)
+  hexdata = rpc.retrieve(txid)
+  print hexdata
 
 
 
