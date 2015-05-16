@@ -6,9 +6,9 @@ help:
 	@echo "Some usefull development shortcuts."
 	@echo "  clean      Remove all generated files."
 	@echo "  test       Run tests and analisys tools."
+	@echo "  lint       Run pylint on project files."
 	@echo "  devsetup   Setup development environment."
-	@echo "  build      Build package."
-	@echo "  publish    Upload package to pypi."
+	@echo "  publish    Build and upload package to pypi."
 
 
 clean:
@@ -26,9 +26,14 @@ devsetup: clean
 	@env/py3/bin/python setup.py develop
 
 
+lint:
+	pylint btctxstore/api.py
+	# TODO use fint to get files
+
+
 test:
-	env/py2/bin/python setup.py test # test python 2
-	env/py3/bin/python setup.py test # test python 3
+	env/py2/bin/python setup.py test
+	env/py3/bin/python setup.py test
 	# TODO add static analisys
 	# TODO add lint
 	# TODO add coverage

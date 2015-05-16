@@ -36,6 +36,7 @@ setup(
     ],
     tests_require=[
       'ipython',
+      'pylint',
       'pudb' # import pudb; pu.db # set break point
     ],
     zip_safe=False
