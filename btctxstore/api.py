@@ -40,8 +40,8 @@ class BtcTxStore(apigen.Definition):
 
     @apigen.command()
     def createtx(self, txins, txouts, locktime="0"):
-        """Create unsigned raw tx with given txins/txouts as json data.
-        <txins>: '[{"txid" : hexdata, "index" : number}, ...]'
+        """Create unsigned rawtx with given txins/txouts as json data.
+        <txins>: '[{"txid" : hexdata, "index" : integer}, ...]'
         <txouts>: '[{"address" : hexdata, "value" : satoshis}, ...]'
         """
         locktime = sanitize.positiveinteger(locktime)
@@ -52,7 +52,7 @@ class BtcTxStore(apigen.Definition):
 
     @apigen.command()
     def gettx(self, txid):
-        """TODO doc string"""
+        """Returns rawtx from <txid>."""
         txid = sanitize.txid(txid)
         tx = self.service.get_tx(txid)
         return tx.as_hex()
@@ -60,7 +60,7 @@ class BtcTxStore(apigen.Definition):
     @apigen.command()
     def signtx(self, rawtx, privatekeys):
         """Sign <rawtx> with  given <privatekeys> as json data.
-        <privatekeys>: '[privatekeywif, ...]'
+        <privatekeys>: '["privatekey_in_wif_format", ...]'
         """
         tx = sanitize.tx(rawtx)
         secretexponents = sanitize.secretexponents(self.testnet, privatekeys)
@@ -69,7 +69,7 @@ class BtcTxStore(apigen.Definition):
 
     @apigen.command()
     def getutxos(self, address):
-        """Get current utxos for address."""
+        """Get current utxos for <address>."""
         address = sanitize.address(address)
         spendables = self.service.spendables_for_address(address)
         def reformat(spendable):
@@ -81,17 +81,21 @@ class BtcTxStore(apigen.Definition):
 
     @apigen.command()
     def publish(self, rawtx):
-        """Publish signed raw transaction to bitcoin network."""
+        """Publish signed <rawtx> to bitcoin network."""
         tx = sanitize.signedtx(rawtx)
         if not self.dryrun:
-            self.service.send_tx(tx) # TODO test it
+            self.service.send_tx(tx)
         return b2h_rev(tx.hash())
 
     @apigen.command()
-    def store(self, hexdata, wifs, changeaddress, fee="10000", locktime="0"):
-        """TODO doc string"""
+    def store(self, hexdata, privatekeys, changeaddress, 
+              fee="10000", locktime="0"): # TODO make changeaddress optional
+        """Store <hexdata> in blockchain and return new txid.
+        Utxos taken from <privatekeys> and change sent to <changeaddress>.
+        <privatekeys>: '["privatekey_in_wif_format", ...]'
+        """
         nulldatatxout = sanitize.nulldatatxout(hexdata)
-        secretexponents = sanitize.secretexponents(self.testnet, wifs)
+        secretexponents = sanitize.secretexponents(self.testnet, privatekeys)
         changeout = sanitize.txout(self.testnet, changeaddress, "0")
         fee = sanitize.positiveinteger(fee)
         locktime = sanitize.positiveinteger(locktime)
@@ -101,8 +105,8 @@ class BtcTxStore(apigen.Definition):
         return b2h_rev(txid)
     
     @apigen.command()
-    def retrieve(self, txid): # TODO test it
-        """TODO doc string"""
+    def retrieve(self, txid):
+        """Returns nulldata stored in blockchain <txid> as hexdata."""
         rawtx = self.gettx(txid)
         return self.readbin(rawtx)
 
