@@ -21,11 +21,10 @@ Prints txid of transaction with stored data.
 
 .. code:: python
 
-  import json
   from btctxstore import BtcTxStore
   api = BtcTxStore()
 
-  privatekeys = json.dumps([privatekey_in_wif_format])
+  privatekeys = [privatekey_in_wif_format]
   txid = api.store(hexdata, privatekeys, changeaddress)
   print txid
 
