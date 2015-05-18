@@ -15,7 +15,7 @@ from . import control
 from . insight import InsightService # XXX rm when added to next pycoin version
 
 
-class BtcTxStore():
+class BtcTxStore(): # TODO use apigen when ported to python 3
     """Bitcoin nulldata output io library."""
 
     def __init__(self, testnet=False, dryrun=False):
@@ -65,14 +65,16 @@ class BtcTxStore():
         tx = control.signtx(self.service, self.testnet, tx, secretexponents)
         return tx.as_hex()
 
-    def getutxos(self, address):
+    def getutxos(self, addresses):
         """Get current utxos for <address>."""
-        address = sanitize.address(address)
-        spendables = self.service.spendables_for_address(address)
+        addresses = sanitize.addresses(addresses)
+        spendables = self.service.spendables_for_addresses(addresses)
         def reformat(spendable):
             return {
                 "txid" : b2h_rev(spendable.tx_hash),
-                "index" : spendable.tx_out_index
+                "index" : spendable.tx_out_index,
+                "value" : spendable.coin_value,
+                "script" : b2h(spendable.script)
             }
         return list(map(reformat, spendables))
 
@@ -83,20 +85,24 @@ class BtcTxStore():
             self.service.send_tx(tx)
         return b2h_rev(tx.hash())
 
-    def store(self, hexdata, privatekeys, changeaddress,
-              fee="10000", locktime="0"): # TODO make changeaddress optional
+    def createkey(self):
+        bip32node = control.createkey(self.testnet)
+        return bip32node.wif()
+
+    def store(self, hexdata, privatekeys, changeaddress=None, txouts=None,
+              fee="10000", locktime="0"):
         """Store <hexdata> in blockchain and return new txid.
         Utxos taken from <privatekeys> and change sent to <changeaddress>.
         <privatekeys>: '["privatekey_in_wif_format", ...]'
         """
         nulldatatxout = sanitize.nulldatatxout(hexdata)
         secretexponents = sanitize.secretexponents(self.testnet, privatekeys)
-        changeout = sanitize.txout(self.testnet, changeaddress, "0")
+        txouts = sanitize.txouts(self.testnet, txouts) if txouts else []
         fee = sanitize.positiveinteger(fee)
         locktime = sanitize.positiveinteger(locktime)
         txid = control.store(self.service, self.testnet, nulldatatxout,
-                             secretexponents, changeout, fee, locktime,
-                             publish=(not self.dryrun))
+                             secretexponents, changeaddress, txouts, fee, 
+                             locktime, publish=(not self.dryrun))
         return b2h_rev(txid)
 
     def retrieve(self, txid):

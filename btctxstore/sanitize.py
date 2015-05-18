@@ -64,6 +64,10 @@ def address(address):
     return address # TODO sanitize
 
 
+def addresses(addresses):
+    return list(map(address, addresses))
+
+
 def txin(txhash, index):
     txhash = txid(txhash)
     index = positiveinteger(index)

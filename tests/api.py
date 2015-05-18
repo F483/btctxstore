@@ -90,9 +90,11 @@ class TestGetUtxos(unittest.TestCase):
         address = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
         expected = [{
             "index": 1, 
-            "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb" 
+            "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb",
+            "script": "76a914f4131906b10615a61af347c56f1223ddc214f95c88ac",
+            "value": 17990000
         }]
-        result = self.api.getutxos(address)
+        result = self.api.getutxos([address])
         self.assertEqual(result, expected)
 
 
@@ -125,9 +127,25 @@ class TestStore(unittest.TestCase):
 
     def test_store(self):
         privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
-        changeaddress = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
-        result = self.api.store("f483", privatekeys, changeaddress)
+        result = self.api.store("f483", privatekeys)
         expected = "6a7311a49b4e59dd3bfcaea75a114d1c3f9cb2e4dbb9b3ed99eef5846a8e1a2a"
+        self.assertEqual(result, expected)
+
+    def test_store_txouts(self):
+        privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
+        txouts = [{
+          "address" : "mgBJ5bG9mQw8mHHcVEJghMamQEXeNLtvpt",
+          "value" : 10000000
+        }]
+        result = self.api.store("f483", privatekeys, txouts=txouts)
+        expected = "9a015258e681e361d99c763aae09776f32b74cc021fb0151ec43fb4f72a65ef8"
+        self.assertEqual(result, expected)
+
+    def test_store_changeaddress(self):
+        privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
+        changeaddress = "mgBJ5bG9mQw8mHHcVEJghMamQEXeNLtvpt"
+        result = self.api.store("f483", privatekeys, changeaddress)
+        expected = "186d1f6f97b56249ba9d9b13f2f50642b19877c356879888dde7ff160fae7d80"
         self.assertEqual(result, expected)
 
 

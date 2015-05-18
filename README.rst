@@ -25,8 +25,8 @@ Prints txid of transaction with stored data.
   api = BtcTxStore()
 
   privatekeys = [privatekey_in_wif_format]
-  txid = api.store(hexdata, privatekeys, changeaddress)
-  print txid
+  txid = api.store(hexnulldata, privatekeys)
+  print(txid)
 
 
 Read data stored in bitcoin blockchain as nulldata output.
@@ -37,6 +37,6 @@ Prints stored data in hex format.
   from btctxstore import BtcTxStore
   api = BtcTxStore()
 
-  hexdata = api.retrieve(txid)
-  print hexdata
+  hexnulldata = api.retrieve(txid)
+  print(hexnulldata)
 
