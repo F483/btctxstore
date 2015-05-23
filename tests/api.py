@@ -17,22 +17,22 @@ class TestIO(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_readwrite(self):
-        rawtx = self.api.writebin(unsignedrawtx, "f483")
-        data = self.api.readbin(rawtx)
+        rawtx = self.api.addnulldata(unsignedrawtx, "f483")
+        data = self.api.getnulldata(rawtx)
         self.assertEqual(data, "f483")
 
     def test_only_one_nulldata_output(self):
         def callback():
-            rawtx = self.api.writebin(unsignedrawtx, "f483") # first nulldata
-            self.api.writebin(rawtx, "f483") # writing second fails
+            rawtx = self.api.addnulldata(unsignedrawtx, "f483")
+            self.api.addnulldata(rawtx, "f483") # writing second fails
         self.assertRaises(Exception, callback)
 
     def test_max_data(self): # TODO move to test/sanitize.py
         max_data = 40 * "aa" # fourty bytes
-        self.api.writebin(unsignedrawtx, max_data)
+        self.api.addnulldata(unsignedrawtx, max_data)
         def callback():
             over_max_data = 41 * "aa" # fourty bytes
-            self.api.writebin(unsignedrawtx, over_max_data)
+            self.api.addnulldata(unsignedrawtx, over_max_data)
         self.assertRaises(Exception, callback)
 
 
@@ -77,7 +77,7 @@ class TestGetTx(unittest.TestCase):
     def test_gettx(self):
         txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
         expected = "0100000001f2963731aa6b1e27a2f94d79620fad643e9e65741b16dadd4e77489c34f20ae2010000008a473044022054d89d41e9a3df9ea6ac367e0a062bd7c65c50232ff36d1f9287cd1851c7444e022069736675af9b94340d64b2b67913c07c4fc2f24006e77ad4df5a13a26e1200350141040319ffdcba35ef3d2577cdf6f07483f4b30865f695d366f02926db1ddd0c03544150b65124baf42601945d1c848bca7970cfa29f538f4ad8cd2564b8f80bb10cffffffff020000000000000000046a02f48370811201000000001976a914f4131906b10615a61af347c56f1223ddc214f95c88ac00000000"
-        result = self.api.gettx(txid)
+        result = self.api.retrievetx(txid)
         self.assertEqual(result, expected)
 
 
@@ -94,7 +94,7 @@ class TestGetUtxos(unittest.TestCase):
             "script": "76a914f4131906b10615a61af347c56f1223ddc214f95c88ac",
             "value": 17990000
         }]
-        result = self.api.getutxos([address])
+        result = self.api.retrieveutxos([address])
         self.assertEqual(result, expected)
 
 
@@ -114,7 +114,7 @@ class TestSignTx(unittest.TestCase):
         }]
         privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
         rawtx = self.api.createtx(txins, txouts)
-        rawtx = self.api.writebin(rawtx, "f483")
+        rawtx = self.api.addnulldata(rawtx, "f483")
         result = self.api.signtx(rawtx, privatekeys)
         expected = "0100000001eb27e1faa89983dcf6064015a55d5346534bf8fb2ca11f7cd004c544c3517498010000008b4830450221008326d0d915dd8d3f9bcced2d774f4a898ed2c4a4929a06c7539500ded89e92db02201542ce4beda2eb1cfdefa3d647481a2a2f38231c953bba8efbb860fe1f49981d0141040319ffdcba35ef3d2577cdf6f07483f4b30865f695d366f02926db1ddd0c03544150b65124baf42601945d1c848bca7970cfa29f538f4ad8cd2564b8f80bb10cffffffff02605a1201000000001976a914f4131906b10615a61af347c56f1223ddc214f95c88ac0000000000000000046a02f48300000000"
         self.assertEqual(result, expected)
@@ -158,6 +158,26 @@ class TestRetrieve(unittest.TestCase):
         txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
         result = self.api.retrieve(txid)
         self.assertEqual(result, "f483")
+
+
+class TestSignData(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_sign(self):
+        privatekey = "92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"
+        sig = self.api.signdata("f483", privatekey)
+        valid = self.api.verifysig("f483", privatekey, sig)
+        self.assertEqual(valid, True)
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':

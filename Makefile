@@ -6,7 +6,6 @@ help:
 	@echo "Some usefull development shortcuts."
 	@echo "  clean      Remove all generated files."
 	@echo "  test       Run tests and analisys tools."
-	@echo "  lint       Run pylint on project files."
 	@echo "  devsetup   Setup development environment."
 	@echo "  publish    Build and upload package to pypi."
 
@@ -16,6 +15,7 @@ clean:
 	@rm -rf apigen.egg-info
 	@rm -rf build
 	@rm -rf dist
+	@rm -rf *.egg
 	@find | grep -i ".*\.pyc$$" | xargs -r -L1 rm
 
 

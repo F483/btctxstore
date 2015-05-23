@@ -26,18 +26,23 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    def writebin(self, rawtx, hexdata):
+    # TODO add addaddressdata (encoded as hash160, see cryptograffiti.info)
+    # TODO add getaddressdata (encoded as hash160, see cryptograffiti.info)
+
+    def addnulldata(self, rawtx, hexdata):
         """Writes <hexdata> as new nulldata output to <rawtx>."""
         tx = sanitize.unsignedtx(rawtx)
         nulldatatxout = sanitize.nulldatatxout(hexdata)
-        tx = control.addnulldata(tx, nulldatatxout)
-        return tx.as_hex()
+        return control.addnulldata(tx, nulldatatxout).as_hex()
 
-    def readbin(self, rawtx):
+    def getnulldata(self, rawtx):
         """Returns nulldata from <rawtx> as hexdata."""
         tx = sanitize.tx(rawtx)
-        data = control.readnulldata(tx)
-        return b2h(data)
+        return b2h(control.getnulldata(tx))
+
+    def createkey(self):
+        bip32node = control.createkey(self.testnet)
+        return bip32node.wif()
 
     def createtx(self, txins, txouts, locktime="0"):
         """Create unsigned rawtx with given txins/txouts as json data.
@@ -50,12 +55,6 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         tx = Tx(1, txins, txouts, locktime)
         return tx.as_hex()
 
-    def gettx(self, txid):
-        """Returns rawtx from <txid>."""
-        txid = sanitize.txid(txid)
-        tx = self.service.get_tx(txid)
-        return tx.as_hex()
-
     def signtx(self, rawtx, privatekeys):
         """Sign <rawtx> with  given <privatekeys> as json data.
         <privatekeys>: '["privatekey_in_wif_format", ...]'
@@ -65,7 +64,13 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         tx = control.signtx(self.service, self.testnet, tx, secretexponents)
         return tx.as_hex()
 
-    def getutxos(self, addresses):
+    def retrievetx(self, txid):
+        """Returns rawtx for <txid>."""
+        txid = sanitize.txid(txid)
+        tx = self.service.get_tx(txid)
+        return tx.as_hex()
+
+    def retrieveutxos(self, addresses):
         """Get current utxos for <address>."""
         addresses = sanitize.addresses(addresses)
         spendables = self.service.spendables_for_addresses(addresses)
@@ -85,12 +90,11 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
             self.service.send_tx(tx)
         return b2h_rev(tx.hash())
 
-    def createkey(self):
-        bip32node = control.createkey(self.testnet)
-        return bip32node.wif()
+    # TODO add storeaddressdata
+    # TODO add retrieveaddressdata
 
     def store(self, hexdata, privatekeys, changeaddress=None, txouts=None,
-              fee="10000", locktime="0"):
+              fee="10000", locktime="0"): # TODO rename to storenulldata
         """Store <hexdata> in blockchain and return new txid.
         Utxos taken from <privatekeys> and change sent to <changeaddress>.
         <privatekeys>: '["privatekey_in_wif_format", ...]'
@@ -105,8 +109,24 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
                              locktime, publish=(not self.dryrun))
         return b2h_rev(txid)
 
-    def retrieve(self, txid):
+    def retrieve(self, txid): # TODO rename to retrievenulldata
         """Returns nulldata stored in blockchain <txid> as hexdata."""
-        rawtx = self.gettx(txid)
-        return self.readbin(rawtx)
+        rawtx = self.retrievetx(txid)
+        return self.getnulldata(rawtx)
+
+    def signdata(self, hexdata, privatekey):
+        """ TODO doc string """
+        data = h2b(hexdata)
+        secretexponent = sanitize.secretexponents(self.testnet, [privatekey])[0]
+        return control.signdata(data, secretexponent)
+
+    def verifysig(self, hexdata, privatekey, signature):
+        """ TODO doc string """
+        # TODO sanitize sig
+        data = h2b(hexdata)
+        secretexponent = sanitize.secretexponents(self.testnet, [privatekey])[0]
+        return control.verifysig(data, secretexponent, signature)
+
+
+
 
