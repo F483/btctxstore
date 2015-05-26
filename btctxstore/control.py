@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 # Copyright (c) 2015 Fabian Barkhau <fabian.barkhau@gmail.com>
 # License: MIT (see LICENSE file)
@@ -8,14 +7,19 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
+import io
 import re
 import os
+import six
 import hashlib
-import codecs
-from pycoin import ecdsa
+import ecdsa
+from pycoin.key import Key
+from pycoin.serialize.bitcoin_streamer import stream_bc_int
+from pycoin import ecdsa as pycoin_ecdsa # pycoin rolling its own *sigh*
 from pycoin.tx.Tx import Tx
 from pycoin.encoding import hash160_sec_to_bitcoin_address
 from pycoin.encoding import public_pair_to_hash160_sec
+from pycoin.encoding import double_sha256
 from pycoin.tx.script import tools
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
 from pycoin.tx.pay_to import build_hash160_lookup
@@ -24,7 +28,9 @@ from pycoin.tx.TxIn import TxIn
 from pycoin.key.BIP32Node import BIP32Node
 
 
-from . import sanitize
+from . import util
+from . import modsqrt
+from . import deserialize
 
 
 def getnulldataout(tx):
@@ -73,22 +79,26 @@ def findtxins(service, addresses, amount):
     return txins, total
 
 
-def secretexponents_to_addresses(testnet, secretexponents):
+def public_pair_to_address(testnet, public_pair, compressed):
     prefix = b'\x6f' if testnet else b"\0"
+    hash160 = public_pair_to_hash160_sec(public_pair, compressed=compressed)
+    return hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
+
+
+def secretexponents_to_addresses(testnet, secretexponents):
     addresses = []
     for secretexponents in secretexponents:
-        public_pair = ecdsa.public_pair_for_secret_exponent(
-            ecdsa.generator_secp256k1, secretexponents
+        public_pair = pycoin_ecdsa.public_pair_for_secret_exponent(
+            pycoin_ecdsa.generator_secp256k1, secretexponents
         )
-        hash160 = public_pair_to_hash160_sec(public_pair, compressed=False)
-        address = hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
+        address = public_pair_to_address(testnet, public_pair, False)
         addresses.append(address)
     return addresses
 
 
-def store(service, testnet, nulldatatxout, secretexponents,
-          changeaddress=None, txouts=None, fee=10000,
-          locktime=0, publish=True):
+def storenulldata(service, testnet, nulldatatxout, secretexponents,
+                  changeaddress=None, txouts=None, fee=10000,
+                  locktime=0, publish=True):
 
     # get required satoshis
     txouts = txouts if txouts else []
@@ -103,7 +113,7 @@ def store(service, testnet, nulldatatxout, secretexponents,
 
     # setup txouts
     changeaddress = changeaddress if changeaddress else addresses[0]
-    changeout = sanitize.txout(testnet, changeaddress, total - required)
+    changeout = deserialize.txout(testnet, changeaddress, total - required)
     txouts = txouts + [nulldatatxout, changeout]
 
     # create, sign and publish tx
@@ -119,36 +129,93 @@ def createkey(testnet):
     return BIP32Node.from_master_secret(os.urandom(64), netcode=netcode)
 
 
-def _hash(data):
-    return hashlib.sha256(hashlib.sha256(data).digest()).digest()
+def encodevarint(value):
+    f = io.BytesIO()
+    stream_bc_int(f, value)
+    return f.getvalue()
 
 
-def _bytes_to_int(data):
-    return int(codecs.encode(data, 'hex'), 16)
-
-
-def _add_header(data):
-    # TODO add header
-    # TODO why does electrum add a header if it gets hashed anyway?
-    return data
-
-
-def _data_to_int(data):
-    envelope = _add_header(data)
-    digest = _hash(envelope)
-    return _bytes_to_int(digest)
+def bitcoinmessagehash(data):
+    prefix = b"\x18Bitcoin Signed Message:\n"
+    varint = encodevarint(len(data))
+    return double_sha256(prefix + varint + data)
 
 
 def signdata(data, secretexponent):
-    val = _data_to_int(data)
-    return ecdsa.sign(ecdsa.generator_secp256k1, secretexponent, val)
+    digest = bitcoinmessagehash(data)
+    secp256k1 = ecdsa.curves.SECP256k1
+    pk = ecdsa.SigningKey.from_secret_exponent(secretexponent, curve=secp256k1)
+    return pk.sign_digest_deterministic(digest, hashfunc=hashlib.sha256,
+                                        sigencode=ecdsa.util.sigencode_string)
 
 
-def verifysig(data, secretexponent, sig): # TODO require public_pair instead
-    public_pair = ecdsa.public_pair_for_secret_exponent(
-        ecdsa.generator_secp256k1, secretexponent
-    )
-    val = _data_to_int(data)
-    return ecdsa.verify(ecdsa.generator_secp256k1, public_pair, val, sig)  
+def recoverpublickey(G, order, r, s, i, e):
+    """Recover a public key from a signature.
+    See SEC 1: Elliptic Curve Cryptography, section 4.1.6, "Public
+    Key Recovery Operation".
+    http://www.secg.org/sec1-v2.pdf
+    """
+    c = ecdsa.ecdsa.curve_secp256k1
+
+    # 1.1 Let x = r + jn 
+    x = r + (i // 2) * order
+
+    # 1.3 point from x
+    alpha = (x * x * x  + c.a() * x + c.b()) % c.p()
+    beta = modsqrt.modular_sqrt(alpha, c.p())
+    y = beta if (beta - i) % 2 == 0 else c.p() - beta
+
+    # 1.4 Check that nR is at infinity
+    R = ecdsa.ellipticcurve.Point(c, x, y, order)
+
+    rInv = ecdsa.numbertheory.inverse_mod(r, order) # r^-1
+    eNeg = -e % order # -e
+
+    # 1.6 compute Q = r^-1 (sR - eG)
+    Q = rInv * (s * R + eNeg * G)
+    return Q
+
+
+def parsesignature(sig, order):
+
+    # parse r and s
+    rsdata = sig[1:]
+    r, s = ecdsa.util.sigdecode_string(rsdata, order)
+
+    # parse parameters
+    params = six.indexbytes(sig, 0) - 27
+    if params != (params & 7): # At most 3 bits
+        raise Exception('Invalid signature parameter!')
+
+    # get compressed parameter
+    compressed = bool(params & 4)
+
+    # get recovery parameter
+    i = params & 3
+
+    return rsdata, r, s, i, compressed
+
+
+def verifysignature(testnet, address, sig, data):
+
+    # parse sig data
+    G = ecdsa.ecdsa.generator_secp256k1
+    order = G.order()
+    rsdata, r, s, i, compressed = parsesignature(sig, order)
+    digest = bitcoinmessagehash(data)
+    e = util.bytestoint(digest)
+
+    # recover public key
+    Q = recoverpublickey(G, order, r, s, i, e)
+    pub = ecdsa.VerifyingKey.from_public_point(Q, curve=ecdsa.curves.SECP256k1)
+
+    # validate that recovered public key is correct
+    sigdecode=ecdsa.util.sigdecode_string
+    pub.verify_digest(rsdata, digest, sigdecode=sigdecode)
+
+    # validate that recovered address is correct
+    public_pair = [Q.x(), Q.y()]
+    recoveredaddress = public_pair_to_address(testnet, public_pair, compressed)
+    return address == recoveredaddress
 
 

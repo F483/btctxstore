@@ -10,7 +10,8 @@ from __future__ import unicode_literals
 
 from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
-from . import sanitize
+from . import serialize
+from . import deserialize
 from . import control
 from . insight import InsightService # XXX rm when added to next pycoin version
 
@@ -19,8 +20,8 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
     """Bitcoin nulldata output io library."""
 
     def __init__(self, testnet=False, dryrun=False):
-        self.testnet = sanitize.flag(testnet)
-        self.dryrun = sanitize.flag(dryrun)
+        self.testnet = deserialize.flag(testnet)
+        self.dryrun = deserialize.flag(dryrun)
         if self.testnet:
             self.service = InsightService("https://test-insight.bitpay.com/")
         else:
@@ -31,16 +32,17 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
 
     def addnulldata(self, rawtx, hexdata):
         """Writes <hexdata> as new nulldata output to <rawtx>."""
-        tx = sanitize.unsignedtx(rawtx)
-        nulldatatxout = sanitize.nulldatatxout(hexdata)
+        tx = deserialize.unsignedtx(rawtx)
+        nulldatatxout = deserialize.nulldatatxout(hexdata)
         return control.addnulldata(tx, nulldatatxout).as_hex()
 
     def getnulldata(self, rawtx):
         """Returns nulldata from <rawtx> as hexdata."""
-        tx = sanitize.tx(rawtx)
+        tx = deserialize.tx(rawtx)
         return b2h(control.getnulldata(tx))
 
     def createkey(self):
+        """Create new private key and return in wif format."""
         bip32node = control.createkey(self.testnet)
         return bip32node.wif()
 
@@ -49,30 +51,30 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         <txins>: '[{"txid" : hexdata, "index" : integer}, ...]'
         <txouts>: '[{"address" : hexdata, "value" : satoshis}, ...]'
         """
-        locktime = sanitize.positiveinteger(locktime)
-        txins = sanitize.txins(txins)
-        txouts = sanitize.txouts(self.testnet, txouts)
+        locktime = deserialize.positiveinteger(locktime)
+        txins = deserialize.txins(txins)
+        txouts = deserialize.txouts(self.testnet, txouts)
         tx = Tx(1, txins, txouts, locktime)
         return tx.as_hex()
 
-    def signtx(self, rawtx, privatekeys):
-        """Sign <rawtx> with  given <privatekeys> as json data.
-        <privatekeys>: '["privatekey_in_wif_format", ...]'
+    def signtx(self, rawtx, wifs):
+        """Sign <rawtx> with  given <wifs> as json data.
+        <wifs>: '["privatekey_in_wif_format", ...]'
         """
-        tx = sanitize.tx(rawtx)
-        secretexponents = sanitize.secretexponents(self.testnet, privatekeys)
+        tx = deserialize.tx(rawtx)
+        secretexponents = deserialize.secretexponents(self.testnet, wifs)
         tx = control.signtx(self.service, self.testnet, tx, secretexponents)
         return tx.as_hex()
 
     def retrievetx(self, txid):
         """Returns rawtx for <txid>."""
-        txid = sanitize.txid(txid)
+        txid = deserialize.txid(txid)
         tx = self.service.get_tx(txid)
         return tx.as_hex()
 
     def retrieveutxos(self, addresses):
         """Get current utxos for <address>."""
-        addresses = sanitize.addresses(addresses)
+        addresses = deserialize.addresses(addresses)
         spendables = self.service.spendables_for_addresses(addresses)
         def reformat(spendable):
             return {
@@ -85,7 +87,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
 
     def publish(self, rawtx):
         """Publish signed <rawtx> to bitcoin network."""
-        tx = sanitize.signedtx(rawtx)
+        tx = deserialize.signedtx(rawtx)
         if not self.dryrun:
             self.service.send_tx(tx)
         return b2h_rev(tx.hash())
@@ -93,39 +95,52 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
     # TODO add storeaddressdata
     # TODO add retrieveaddressdata
 
-    def store(self, hexdata, privatekeys, changeaddress=None, txouts=None,
-              fee="10000", locktime="0"): # TODO rename to storenulldata
+    def storenulldata(self, hexdata, wifs, changeaddress=None, txouts=None,
+                      fee="10000", locktime="0"):
         """Store <hexdata> in blockchain and return new txid.
-        Utxos taken from <privatekeys> and change sent to <changeaddress>.
-        <privatekeys>: '["privatekey_in_wif_format", ...]'
+        Utxos taken from <wifs> and change sent to <changeaddress>.
+        <wifs>: '["privatekey_in_wif_format", ...]'
         """
-        nulldatatxout = sanitize.nulldatatxout(hexdata)
-        secretexponents = sanitize.secretexponents(self.testnet, privatekeys)
-        txouts = sanitize.txouts(self.testnet, txouts) if txouts else []
-        fee = sanitize.positiveinteger(fee)
-        locktime = sanitize.positiveinteger(locktime)
-        txid = control.store(self.service, self.testnet, nulldatatxout,
-                             secretexponents, changeaddress, txouts, fee, 
-                             locktime, publish=(not self.dryrun))
+        nulldatatxout = deserialize.nulldatatxout(hexdata)
+        secretexponents = deserialize.secretexponents(self.testnet, wifs)
+        txouts = deserialize.txouts(self.testnet, txouts) if txouts else []
+        fee = deserialize.positiveinteger(fee)
+        locktime = deserialize.positiveinteger(locktime)
+        txid = control.storenulldata(self.service, self.testnet, nulldatatxout,
+                                     secretexponents, changeaddress, txouts,
+                                     fee, locktime, publish=(not self.dryrun))
         return b2h_rev(txid)
 
-    def retrieve(self, txid): # TODO rename to retrievenulldata
+    def retrievenulldata(self, txid):
         """Returns nulldata stored in blockchain <txid> as hexdata."""
         rawtx = self.retrievetx(txid)
         return self.getnulldata(rawtx)
 
-    def signdata(self, hexdata, privatekey):
-        """ TODO doc string """
-        data = h2b(hexdata)
-        secretexponent = sanitize.secretexponents(self.testnet, [privatekey])[0]
-        return control.signdata(data, secretexponent)
+    def getaddress(self, wif):
+        """ Return bitcoin address for given wallet. """
+        return deserialize.key(wif).address()
 
-    def verifysig(self, hexdata, privatekey, signature):
-        """ TODO doc string """
-        # TODO sanitize sig
-        data = h2b(hexdata)
-        secretexponent = sanitize.secretexponents(self.testnet, [privatekey])[0]
-        return control.verifysig(data, secretexponent, signature)
+    def signdata(self, wif, hexdata):
+        """ Signing <hexdata> with <wif> private key."""
+        data = deserialize.binary(hexdata)
+        key = deserialize.key(wif)
+        sig = control.signdata(data, key.secret_exponent())
+        for i in range(4):
+            sig = serialize.signature(i, False, sig)
+            if self.verifysignature(key.address(), sig, hexdata):
+                return sig
+        raise Exception("Failed to serialize signature!")
+
+    def verifysignature(self, address, signature, hexdata):
+        """ Verify <signature> of <hexdata> by <address>."""
+        try:
+            address = deserialize.address(address)
+            data = deserialize.binary(hexdata)
+            signature = deserialize.signature(signature)
+            return control.verifysignature(self.testnet, address, 
+                                           signature, data)
+        except Exception as e: # FIXME catch on expected exceptions
+            return False
 
 
 

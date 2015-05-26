@@ -4,8 +4,19 @@
 # License: MIT (see LICENSE file)
 
 
+from __future__ import print_function
+from __future__ import unicode_literals
+
+
+import binascii
 import unittest
 from btctxstore import BtcTxStore
+
+
+wallet = {
+    "wif" : "92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo",
+    "address" : "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
+}
 
 
 unsignedrawtx = "0100000001ef5b2eb4b9b0c10449cbabedca45709135d457a04dabd33c1068aaf86562a72b0200000000ffffffff0240420f00000000001976a91491cc9812ca45e7209ff9364ce96527a7c49f1f3188ac3e770400000000001976a9142e330c36e1d0f199fd91446f2210209a0d35caef88ac00000000"
@@ -87,7 +98,7 @@ class TestGetUtxos(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_getutxos(self):
-        address = "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
+        address = wallet["address"]
         expected = [{
             "index": 1, 
             "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb",
@@ -109,13 +120,13 @@ class TestSignTx(unittest.TestCase):
           "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
         }]
         txouts = [{
-          "address" : "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM",
+          "address" : wallet["address"],
           "value" : 17980000
         }]
-        privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
+        wifs = [wallet["wif"]]
         rawtx = self.api.createtx(txins, txouts)
         rawtx = self.api.addnulldata(rawtx, "f483")
-        result = self.api.signtx(rawtx, privatekeys)
+        result = self.api.signtx(rawtx, wifs)
         expected = "0100000001eb27e1faa89983dcf6064015a55d5346534bf8fb2ca11f7cd004c544c3517498010000008b4830450221008326d0d915dd8d3f9bcced2d774f4a898ed2c4a4929a06c7539500ded89e92db02201542ce4beda2eb1cfdefa3d647481a2a2f38231c953bba8efbb860fe1f49981d0141040319ffdcba35ef3d2577cdf6f07483f4b30865f695d366f02926db1ddd0c03544150b65124baf42601945d1c848bca7970cfa29f538f4ad8cd2564b8f80bb10cffffffff02605a1201000000001976a914f4131906b10615a61af347c56f1223ddc214f95c88ac0000000000000000046a02f48300000000"
         self.assertEqual(result, expected)
 
@@ -126,25 +137,25 @@ class TestStore(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_store(self):
-        privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
-        result = self.api.store("f483", privatekeys)
+        wifs = [wallet["wif"]]
+        result = self.api.storenulldata("f483", wifs)
         expected = "6a7311a49b4e59dd3bfcaea75a114d1c3f9cb2e4dbb9b3ed99eef5846a8e1a2a"
         self.assertEqual(result, expected)
 
     def test_store_txouts(self):
-        privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
+        wifs = [wallet["wif"]]
         txouts = [{
           "address" : "mgBJ5bG9mQw8mHHcVEJghMamQEXeNLtvpt",
           "value" : 10000000
         }]
-        result = self.api.store("f483", privatekeys, txouts=txouts)
+        result = self.api.storenulldata("f483", wifs, txouts=txouts)
         expected = "9a015258e681e361d99c763aae09776f32b74cc021fb0151ec43fb4f72a65ef8"
         self.assertEqual(result, expected)
 
     def test_store_changeaddress(self):
-        privatekeys = ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"]
+        wifs = [wallet["wif"]]
         changeaddress = "mgBJ5bG9mQw8mHHcVEJghMamQEXeNLtvpt"
-        result = self.api.store("f483", privatekeys, changeaddress)
+        result = self.api.storenulldata("f483", wifs, changeaddress)
         expected = "186d1f6f97b56249ba9d9b13f2f50642b19877c356879888dde7ff160fae7d80"
         self.assertEqual(result, expected)
 
@@ -156,8 +167,57 @@ class TestRetrieve(unittest.TestCase):
 
     def test_retrieve(self):
         txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
-        result = self.api.retrieve(txid)
+        result = self.api.retrievenulldata(txid)
         self.assertEqual(result, "f483")
+
+
+class TestGetAddress(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_getaddress(self):
+        wif = wallet["wif"]
+        result = self.api.getaddress(wif)
+        expected = wallet["address"]
+        self.assertEqual(result, expected)
+
+
+class TestVerifySignature(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_verify_positive(self):
+        address = "mkRqiCnLFFsEH6ezsE1RiMxEjLRXZzWjwe"
+        signature = "H8wq7z8or7jGGT06ZJ0dC1+wnmRLY/fWnW2SRSRPtypaBAFJAtYhcOl+0jyjujEio91/7eFEW9tuM/WZOusSEGc="
+        data = binascii.hexlify(b"testmessage")
+        result = self.api.verifysignature(address, signature, data)
+        self.assertEqual(result, True)
+
+    def test_verify_incorrect_address(self):
+        address = "mkRqiCnLFFsEH6ezsE2RiMxEjLRXZzWjwe"
+        signature = "H8wq7z8or7jGGT06ZJ0dC1+wnmRLY/fWnW2SRSRPtypaBAFJAtYhcOl+0jyjujEio91/7eFEW9tuM/WZOusSEGc="
+        data = binascii.hexlify(b"testmessage")
+        result = self.api.verifysignature(address, signature, data)
+        self.assertEqual(result, False)
+
+    def test_verify_incorrect_signature(self):
+        address = "mkRqiCnLFFsEH6ezsE1RiMxEjLRXZzWjwe"
+        signature = "H8wq7z8or7jGGT06ZJ1dC1+wnmRLY/fWnW2SRSRPtypaBAFJAtYhcOl+0jyjujEio91/7eFEW9tuM/WZOusSEGc="
+        data = binascii.hexlify(b"testmessage")
+        result = self.api.verifysignature(address, signature, data)
+        self.assertEqual(result, False)
+
+    def test_verify_incorrect_data(self):
+        address = "mkRqiCnLFFsEH6ezsE1RiMxEjLRXZzWjwe"
+        signature = "H8wq7z8or7jGGT06ZJ0dC1+wnmRLY/fWnW2SRSRPtypaBAFJAtYhcOl+0jyjujEio91/7eFEW9tuM/WZOusSEGc="
+        data = binascii.hexlify(b"testmessagee")
+        result = self.api.verifysignature(address, signature, data)
+        self.assertEqual(result, False)
+
+    def test_verify_signature_params(self):
+        pass # TODO test incorrect signature params (first byte)
 
 
 class TestSignData(unittest.TestCase):
@@ -166,18 +226,12 @@ class TestSignData(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_sign(self):
-        privatekey = "92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"
-        sig = self.api.signdata("f483", privatekey)
-        valid = self.api.verifysig("f483", privatekey, sig)
+        wif = wallet["wif"]
+        data = binascii.hexlify(b"testmessage")
+        sig = self.api.signdata(wif, data)
+        address = self.api.getaddress(wif)
+        valid = self.api.verifysignature(address, sig, data)
         self.assertEqual(valid, True)
-
-
-
-
-
-
-
-
 
 
 if __name__ == '__main__':

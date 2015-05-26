@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 # Copyright (c) 2015 Fabian Barkhau <fabian.barkhau@gmail.com>
 # License: MIT (see LICENSE file)
@@ -9,15 +8,20 @@ from __future__ import unicode_literals
 
 
 import re
+import base64
 from pycoin.key import Key
 from pycoin.tx.Tx import Tx
 from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
 from pycoin.tx.script import tools
 from pycoin.encoding import bitcoin_address_to_hash160_sec
 from pycoin.encoding import wif_to_secret_exponent
+from pycoin.encoding import sec_to_public_pair
 from pycoin.tx.pay_to import build_hash160_lookup
 from pycoin.tx.TxOut import TxOut
-from pycoin.tx.TxIn import TxIn                                                  
+from pycoin.tx.TxIn import TxIn
+
+
+# TODO decorator to validates all io is bool, int, str or json serializable
 
 
 class InvalidInput(Exception): pass
@@ -38,7 +42,16 @@ def unsignedtx(rawtx):
 
 
 def binary(hexdata):
+    if type(hexdata) == type(b"bytes"):
+        hexdata = hexdata.decode("ascii")
     return h2b(hexdata)
+
+
+def signature(sig):
+    sig = base64.b64decode(sig)
+    if len(sig) != 65:
+        raise InvalidInput("Signature must be 65 bytes long!")
+    return sig
 
 
 def integer(number):
@@ -61,7 +74,7 @@ def txid(txhash):
 
 
 def address(address):
-    return address # TODO sanitize
+    return address # TODO check if valid bitcoin address
 
 
 def addresses(addresses):
@@ -105,5 +118,10 @@ def nulldatatxout(hexdata):
 def secretexponents(testnet, wifs):
     valid_prefixes = [b'\xef' if testnet else b'\x80']
     return list(map(lambda x: wif_to_secret_exponent(x, valid_prefixes), wifs))
+
+
+def key(wif):
+    return Key.from_text(wif)
+
 
 

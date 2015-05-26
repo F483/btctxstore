@@ -37,10 +37,10 @@ test:
 	# TODO add static analisys
 	# TODO add lint
 	# TODO add coverage
+	# import pudb; pu.db # set break point
 
 
 publish: test
 	env/py3/bin/python setup.py register sdist upload
 
 
-# import pudb; pu.db # set break point

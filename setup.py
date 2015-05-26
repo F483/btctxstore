@@ -32,12 +32,14 @@ setup(
     download_url = DOWNLOAD_URL,
     test_suite="tests.api",
     install_requires=[
-        'pycoin == 0.52'
+        'pycoin == 0.52',
+        'six == 1.9.0',
+        'ecdsa'
     ],
     tests_require=[
-      'ipython',
-      'pylint',
-      'pudb' # import pudb; pu.db # set break point
+      #'ipython',
+      #'pylint',
+      #'pudb' # import pudb; pu.db # set break point
     ],
     zip_safe=False
 )
