@@ -137,7 +137,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
             address = deserialize.address(address)
             data = deserialize.binary(hexdata)
             signature = deserialize.signature(signature)
-            return control.verifysignature(self.testnet, address, 
+            return control.verifysignature(self.testnet, address,
                                            signature, data)
         except Exception as e: # FIXME catch on expected exceptions
             return False
