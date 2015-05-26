@@ -56,8 +56,9 @@ def getnulldata(tx):
     return h2b(tools.disassemble(out.script)[10:])
 
 
-def signtx(service, testnet, tx, secretexponents):
+def signtx(service, testnet, tx, keys):
     netcode = 'XTN' if testnet else 'BTC'
+    secretexponents = list(map(lambda key: key.secret_exponent(), keys))
     lookup = build_hash160_lookup(secretexponents)
     for txin_idx in range(len(tx.txs_in)):
         txin = tx.txs_in[txin_idx]
@@ -85,18 +86,7 @@ def public_pair_to_address(testnet, public_pair, compressed):
     return hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
 
 
-def secretexponents_to_addresses(testnet, secretexponents):
-    addresses = []
-    for secretexponents in secretexponents:
-        public_pair = pycoin_ecdsa.public_pair_for_secret_exponent(
-            pycoin_ecdsa.generator_secp256k1, secretexponents
-        )
-        address = public_pair_to_address(testnet, public_pair, False)
-        addresses.append(address)
-    return addresses
-
-
-def storenulldata(service, testnet, nulldatatxout, secretexponents,
+def storenulldata(service, testnet, nulldatatxout, keys,
                   changeaddress=None, txouts=None, fee=10000,
                   locktime=0, publish=True):
 
@@ -105,7 +95,7 @@ def storenulldata(service, testnet, nulldatatxout, secretexponents,
     required = sum(list(map(lambda txout: txout.coin_value, txouts))) + fee
 
     # get txins
-    addresses = secretexponents_to_addresses(testnet, secretexponents)
+    addresses = list(map(lambda key: key.address(), keys))
     txins, total = findtxins(service, addresses, required)
     if total < required:
         msg = "Insufficient funds! Required: %s Available: %s"
@@ -118,7 +108,7 @@ def storenulldata(service, testnet, nulldatatxout, secretexponents,
 
     # create, sign and publish tx
     tx = Tx(1, txins, txouts, locktime)
-    tx = signtx(service, testnet, tx, secretexponents)
+    tx = signtx(service, testnet, tx, keys)
     if publish:
         service.send_tx(tx)
     return tx.hash()
@@ -141,9 +131,10 @@ def bitcoinmessagehash(data):
     return double_sha256(prefix + varint + data)
 
 
-def signdata(data, secretexponent):
+def signdata(data, key):
     digest = bitcoinmessagehash(data)
     secp256k1 = ecdsa.curves.SECP256k1
+    secretexponent = key.secret_exponent()
     pk = ecdsa.SigningKey.from_secret_exponent(secretexponent, curve=secp256k1)
     return pk.sign_digest_deterministic(digest, hashfunc=hashlib.sha256,
                                         sigencode=ecdsa.util.sigencode_string)

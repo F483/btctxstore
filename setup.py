@@ -20,8 +20,7 @@ DOWNLOAD_URL = DOWNLOAD_BASEURL + "btctxstore-%s.tar.gz" % VERSION
 setup(
     name='btctxstore',
     version=VERSION,
-    description=('A simple library to store/retrieve information '
-                 'in bitcoin transactions using OP_RETURN.'),
+    description=('A library to read/write data to bitcoin transaction outputs.'),
     long_description=open("README.rst").read(),
     keywords=("Bitcoin, OP_RETURN, store, tx, transaction"),
     url='https://github.com/F483/btctxstore/',

@@ -124,4 +124,7 @@ def key(wif):
     return Key.from_text(wif)
 
 
+def keys(wifs):
+    return list(map(key, wifs))
+
 

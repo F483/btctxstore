@@ -62,8 +62,8 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         <wifs>: '["privatekey_in_wif_format", ...]'
         """
         tx = deserialize.tx(rawtx)
-        secretexponents = deserialize.secretexponents(self.testnet, wifs)
-        tx = control.signtx(self.service, self.testnet, tx, secretexponents)
+        keys = deserialize.keys(wifs)
+        tx = control.signtx(self.service, self.testnet, tx, keys)
         return tx.as_hex()
 
     def retrievetx(self, txid):
@@ -102,12 +102,12 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         <wifs>: '["privatekey_in_wif_format", ...]'
         """
         nulldatatxout = deserialize.nulldatatxout(hexdata)
-        secretexponents = deserialize.secretexponents(self.testnet, wifs)
+        keys = deserialize.keys(wifs)
         txouts = deserialize.txouts(self.testnet, txouts) if txouts else []
         fee = deserialize.positiveinteger(fee)
         locktime = deserialize.positiveinteger(locktime)
         txid = control.storenulldata(self.service, self.testnet, nulldatatxout,
-                                     secretexponents, changeaddress, txouts,
+                                     keys, changeaddress, txouts,
                                      fee, locktime, publish=(not self.dryrun))
         return b2h_rev(txid)
 
@@ -125,7 +125,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         data = deserialize.binary(hexdata)
         key = deserialize.key(wif)
         address = key.address()
-        sigdata = control.signdata(data, key.secret_exponent())
+        sigdata = control.signdata(data, key)
 
         # TODO move adding recovery param to control
         for i in range(4):

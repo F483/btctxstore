@@ -136,11 +136,16 @@ class TestStore(unittest.TestCase):
     def setUp(self):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
-    def test_store(self):
+    def test_store_a(self):
         wifs = [wallet["wif"]]
         result = self.api.storenulldata("f483", wifs)
         expected = "6a7311a49b4e59dd3bfcaea75a114d1c3f9cb2e4dbb9b3ed99eef5846a8e1a2a"
         self.assertEqual(result, expected)
+    
+    def test_store_b(self):
+        wifs = ["cUZfG8KJ3BrXneg2LjUX4VoMg76Fcgx6QDiAZj2oGbuw6da8Lzv1"]
+        data = binascii.hexlify(b"github.com/F483/btctxstore")
+        txid = self.api.storenulldata(data, wifs)
 
     def test_store_txouts(self):
         wifs = [wallet["wif"]]
