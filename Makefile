@@ -26,11 +26,6 @@ devsetup: clean
 	@env/py3/bin/python setup.py develop
 
 
-lint:
-	pylint btctxstore/api.py
-	# TODO use fint to get files
-
-
 test:
 	env/py2/bin/python setup.py test
 	env/py3/bin/python setup.py test

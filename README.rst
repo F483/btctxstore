@@ -12,65 +12,70 @@ Installation
 
   pip install btctxstore
 
-=============================================
-storing/retrieving data from nulldata outputs
-=============================================
 
-Store data in bitcoin blockchain in new transaction with nulldata output.
-Prints txid of transaction with stored data.
+================================
+storing data in nulldata outputs
+================================
+
+Store data in blockchain in new transaction with nulldata output.
 
 .. code:: python
 
+  # from examples/storenulldata.py
+  import binascii
   from btctxstore import BtcTxStore
-  api = BtcTxStore()
 
-  privatekeys = [privatekey_in_wif_format]
-  txid = api.storenulldata(hexnulldata, privatekeys)
+  # Wallet used to pay for fee. Please do not spend the testnet coins is 
+  # this wallet or the example will fail due to lack of funds.
+  wifs = ["cUZfG8KJ3BrXneg2LjUX4VoMg76Fcgx6QDiAZj2oGbuw6da8Lzv1"]
+
+  # use testnet and dont post tx to blockchain for example
+  api = BtcTxStore(testnet=True, dryrun=True)
+
+  # store data in blockchain as nulldata output (max 40bytes)
+  data = binascii.hexlify(b"github.com/F483/btctxstore")
+  txid = api.storenulldata(data, wifs)
   print(txid)
 
 
-Read data stored in bitcoin blockchain as nulldata output.
-Prints stored data in hex format.
+=====================================
+retrieving data from nulldata outputs
+=====================================
+
+Retrieve transaction from blockchain and read data stored as nulldata output.
 
 .. code:: python
 
+  # from examples/retrievenulldata.py
   from btctxstore import BtcTxStore
-  api = BtcTxStore()
 
+  api = BtcTxStore(testnet=True, dryrun=True) # use testing setup for example
+  txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
   hexnulldata = api.retrievenulldata(txid)
   print(hexnulldata)
+
 
 ======================================
 sign/verify data (bitcoind compatible)
 ======================================
 
-Signing message with a private key.
-
 .. code:: python
 
-  # from examples/sign.py
+  # from examples/signverify.py
   import binascii
   from btctxstore import BtcTxStore
 
-  data = binascii.hexlify(b"messagetext")
-  api = BtcTxStore(testnet=True, dryrun=True)
+  api = BtcTxStore(testnet=True, dryrun=True) # use testing setup for example
   wif = api.createkey() # create new private key
-  sigsignature = api.signdata(wif, data)
-  print(signature)
+  address = api.getaddress(wif) # get private key address
+  data = binascii.hexlify(b"messagetext") # hexlify messagetext
 
-Verify signature with address, signature and data.
+  # sign data with private key
+  signature = api.signdata(wif, data)
+  print("signature:", signature)
 
-.. code:: python
+  # verify signature (no public or private key needed)
+  isvalid = api.verifysignature(address, signature, data)
+  print("valid signature" if isvalid else "invalid signature")
 
-  # from examples/verify.py
-  import binascii
-  from btctxstore import BtcTxStore
-
-  address = "mkRqiCnLFFsEH6ezsE1RiMxEjLRXZzWjwe"
-  signature = "H8wq7z8or7jGGT06ZJ0dC1+wnmRLY/fWnW2SRSRPtypaBAFJAtYhcOl+0jyjujEio91/7eFEW9tuM/WZOusSEGc="
-  data = binascii.hexlify(b"testmessage")
-
-  api = BtcTxStore(testnet=True, dryrun=True)
-  result = api.verifysignature(address, signature, data)
-  print(result)
 

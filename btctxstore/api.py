@@ -124,11 +124,15 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         """ Signing <hexdata> with <wif> private key."""
         data = deserialize.binary(hexdata)
         key = deserialize.key(wif)
-        sig = control.signdata(data, key.secret_exponent())
+        address = key.address()
+        sigdata = control.signdata(data, key.secret_exponent())
+
+        # TODO move adding recovery param to control
         for i in range(4):
-            sig = serialize.signature(i, False, sig)
-            if self.verifysignature(key.address(), sig, hexdata):
-                return sig
+            for compressed in [True, False]:
+                sig = serialize.signature(i, compressed, sigdata)
+                if self.verifysignature(address, sig, hexdata):
+                    return sig
         raise Exception("Failed to serialize signature!")
 
     def verifysignature(self, address, signature, hexdata):

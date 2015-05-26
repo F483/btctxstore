@@ -6,11 +6,10 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import binascii
 from btctxstore import BtcTxStore
 
-data = binascii.hexlify(b"messagetext")
-api = BtcTxStore(testnet=True, dryrun=True)
-wif = api.createkey() # create new private key
-sigsignature = api.signdata(wif, data)
-print(signature)
+api = BtcTxStore(testnet=True, dryrun=True) # use testing setup for example
+txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
+hexnulldata = api.retrievenulldata(txid)
+print(hexnulldata)
+

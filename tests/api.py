@@ -225,14 +225,21 @@ class TestSignData(unittest.TestCase):
     def setUp(self):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
-    def test_sign(self):
+    def test_sign_a(self):
         wif = wallet["wif"]
         data = binascii.hexlify(b"testmessage")
-        sig = self.api.signdata(wif, data)
         address = self.api.getaddress(wif)
+        sig = self.api.signdata(wif, data)
         valid = self.api.verifysignature(address, sig, data)
         self.assertEqual(valid, True)
 
+    def test_sign_b(self):
+        wif = "cSuT2J14dYbe1zvB5z5WTXeRcMbj4tnoKssAK1ZQbnX5HtHfW3bi"
+        data = binascii.hexlify(b"testmessage")
+        address = self.api.getaddress(wif)
+        sig = self.api.signdata(wif, data)
+        valid = self.api.verifysignature(address, sig, data)
+        self.assertEqual(valid, True)
 
 if __name__ == '__main__':
     unittest.main()

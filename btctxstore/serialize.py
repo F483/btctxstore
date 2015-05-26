@@ -11,12 +11,12 @@ import base64
 from . import util
 
 
-def signature(i, compressed, sig):
+def signature(i, compressed, sigdata):
     params = 27 # signature parameters
     params += i # add recovery parameter
     params += 4 if compressed else 0 # add compressed flag
-    sigdata = struct.pack(">B", params) + sig
-    return base64.b64encode(sigdata)
+    sig = struct.pack(">B", params) + sigdata
+    return base64.b64encode(sig)
 
 
 
