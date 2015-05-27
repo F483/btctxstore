@@ -33,6 +33,7 @@ test:
 	# TODO add lint
 	# TODO add coverage
 	# import pudb; pu.db # set break point
+	# TODO use pycharm for pep8
 
 
 publish: test

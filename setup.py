@@ -29,7 +29,7 @@ setup(
     license='MIT',
     packages=find_packages(),
     download_url = DOWNLOAD_URL,
-    test_suite="tests.api",
+    test_suite="tests",
     install_requires=[
         'pycoin == 0.52',
         'six == 1.9.0',

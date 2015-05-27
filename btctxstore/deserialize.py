@@ -19,12 +19,11 @@ from pycoin.encoding import sec_to_public_pair
 from pycoin.tx.pay_to import build_hash160_lookup
 from pycoin.tx.TxOut import TxOut
 from pycoin.tx.TxIn import TxIn
+from pycoin.key import validate
 
+from . import exceptions
 
 # TODO decorator to validates all io is bool, int, str or json serializable
-
-
-class InvalidInput(Exception): pass
 
 
 def tx(rawtx):
@@ -50,7 +49,7 @@ def binary(hexdata):
 def signature(sig):
     sig = base64.b64decode(sig)
     if len(sig) != 65:
-        raise InvalidInput("Signature must be 65 bytes long!")
+        raise exceptions.InvalidInput("Signature must be 65 bytes long!")
     return sig
 
 
@@ -65,7 +64,7 @@ def flag(flag):
 def positiveinteger(number):
     number = int(number)
     if number < 0:
-        raise InvalidInput("Integer may not be < 0!")
+        raise exceptions.InvalidInput("Integer may not be < 0!")
     return number
 
 
@@ -73,12 +72,15 @@ def txid(txhash):
     return h2b_rev(txhash)
 
 
-def address(address):
-    return address # TODO check if valid bitcoin address
+def address(testnet, address):
+    netcode = 'XTN' if testnet else 'BTC'
+    if not validate.is_address_valid(address, allowable_netcodes=[netcode]):
+        raise exceptions.InvalidAddress(address)
+    return address
 
 
-def addresses(addresses):
-    return list(map(address, addresses))
+def addresses(testnet, addresses):
+    return list(map(lambda addr: address(testnet, addr), addresses))
 
 
 def txin(txhash, index):
@@ -89,7 +91,7 @@ def txin(txhash, index):
 
 def txout(testnet, targetaddress, value):
     testnet = flag(testnet)
-    targetaddress = address(targetaddress)
+    targetaddress = address(testnet, targetaddress)
     value = positiveinteger(value)
     prefix = b'\x6f' if testnet else b"\0"
     hash160 = b2h(bitcoin_address_to_hash160_sec(targetaddress, prefix))
@@ -109,7 +111,7 @@ def txouts(testnet, data):
 def nulldatatxout(hexdata):
     data = binary(hexdata)
     if len(data) > 40:
-        raise Exception("Data exceeds maximum of 40 bytes!")
+        raise exceptions.MaxNulldataExceeded(len(data))
     script_text = "OP_RETURN %s" % b2h(data)
     script_bin = tools.compile(script_text)
     return TxOut(0, script_bin)
@@ -120,11 +122,14 @@ def secretexponents(testnet, wifs):
     return list(map(lambda x: wif_to_secret_exponent(x, valid_prefixes), wifs))
 
 
-def key(wif):
+def key(testnet, wif):
+    netcode = 'XTN' if testnet else 'BTC'
+    if not validate.is_wif_valid(wif, allowable_netcodes=[netcode]):
+        raise exceptions.InvalidWif(address)
     return Key.from_text(wif)
 
 
-def keys(wifs):
-    return list(map(key, wifs))
+def keys(testnet, wifs):
+    return list(map(lambda wif: key(testnet, wif), wifs))
 
 

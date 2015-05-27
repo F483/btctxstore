@@ -13,6 +13,7 @@ import os
 import six
 import hashlib
 import ecdsa
+import struct
 from pycoin.key import Key
 from pycoin.serialize.bitcoin_streamer import stream_bc_int
 from pycoin import ecdsa as pycoin_ecdsa # pycoin rolling its own *sigh*
@@ -31,6 +32,7 @@ from pycoin.key.BIP32Node import BIP32Node
 from . import util
 from . import modsqrt
 from . import deserialize
+from . import exceptions
 
 
 def getnulldataout(tx):
@@ -42,7 +44,7 @@ def getnulldataout(tx):
 
 def addnulldata(tx, nulldatatxout):
     if getnulldataout(tx):
-        raise Exception("Transaction already has a nulldata output!")
+        raise exceptions.ExistingNulldataOutput()
     # TODO validate transaction is unsigned
     tx.txs_out.append(nulldatatxout)
     # TODO validate transaction
@@ -98,8 +100,7 @@ def storenulldata(service, testnet, nulldatatxout, keys,
     addresses = list(map(lambda key: key.address(), keys))
     txins, total = findtxins(service, addresses, required)
     if total < required:
-        msg = "Insufficient funds! Required: %s Available: %s"
-        raise Exception(msg % (required, total))
+        raise exceptions.InsufficientFunds(required, total)
 
     # setup txouts
     changeaddress = changeaddress if changeaddress else addresses[0]
@@ -131,13 +132,32 @@ def bitcoinmessagehash(data):
     return double_sha256(prefix + varint + data)
 
 
-def signdata(data, key):
+def add_recovery_params(i, compressed, sigdata):
+    params = 27 # signature parameters
+    params += i # add recovery parameter
+    params += 4 if compressed else 0 # add compressed flag
+    return struct.pack(">B", params) + sigdata
+
+
+def signdata(testnet, data, key):
+    address = key.address()
     digest = bitcoinmessagehash(data)
     secp256k1 = ecdsa.curves.SECP256k1
     secretexponent = key.secret_exponent()
+    sigencode = ecdsa.util.sigencode_string
+
+    # sign data
     pk = ecdsa.SigningKey.from_secret_exponent(secretexponent, curve=secp256k1)
-    return pk.sign_digest_deterministic(digest, hashfunc=hashlib.sha256,
-                                        sigencode=ecdsa.util.sigencode_string)
+    sigdata = pk.sign_digest_deterministic(digest, hashfunc=hashlib.sha256,
+                                           sigencode=sigencode)
+
+    # add recovery params
+    for i in range(4):
+        for compressed in [True, False]:
+            sig = add_recovery_params(i, compressed, sigdata)
+            if verifysignature(testnet, address, sig, data):
+                return sig
+    raise Exception("Failed to serialize signature!")
 
 
 def recoverpublickey(G, order, r, s, i, e):

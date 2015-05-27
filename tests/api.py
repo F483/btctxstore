@@ -11,6 +11,7 @@ from __future__ import unicode_literals
 import binascii
 import unittest
 from btctxstore import BtcTxStore
+from btctxstore import exceptions
 
 
 wallet = {
@@ -36,15 +37,7 @@ class TestIO(unittest.TestCase):
         def callback():
             rawtx = self.api.addnulldata(unsignedrawtx, "f483")
             self.api.addnulldata(rawtx, "f483") # writing second fails
-        self.assertRaises(Exception, callback)
-
-    def test_max_data(self): # TODO move to test/sanitize.py
-        max_data = 40 * "aa" # fourty bytes
-        self.api.addnulldata(unsignedrawtx, max_data)
-        def callback():
-            over_max_data = 41 * "aa" # fourty bytes
-            self.api.addnulldata(unsignedrawtx, over_max_data)
-        self.assertRaises(Exception, callback)
+        self.assertRaises(exceptions.ExistingNulldataOutput, callback)
 
 
 class TestCreateTx(unittest.TestCase):
@@ -101,9 +94,9 @@ class TestGetUtxos(unittest.TestCase):
         address = wallet["address"]
         expected = [{
             "index": 1, 
-            "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb",
+            "txid": "ba7a0b63c49994006e45449fdf0d39414f0f3473e55d206ccbf994f3a5122722",
             "script": "76a914f4131906b10615a61af347c56f1223ddc214f95c88ac",
-            "value": 17990000
+            "value": 17980000
         }]
         result = self.api.retrieveutxos([address])
         self.assertEqual(result, expected)
@@ -139,13 +132,20 @@ class TestStore(unittest.TestCase):
     def test_store_a(self):
         wifs = [wallet["wif"]]
         result = self.api.storenulldata("f483", wifs)
-        expected = "6a7311a49b4e59dd3bfcaea75a114d1c3f9cb2e4dbb9b3ed99eef5846a8e1a2a"
+        expected = "0a6675f32c20aa74218130210ad817f6e2a55fac0ced8b49516a72a98f47ae81"
         self.assertEqual(result, expected)
     
     def test_store_b(self):
         wifs = ["cUZfG8KJ3BrXneg2LjUX4VoMg76Fcgx6QDiAZj2oGbuw6da8Lzv1"]
         data = binascii.hexlify(b"github.com/F483/btctxstore")
         txid = self.api.storenulldata(data, wifs)
+    
+    def test_store_insufficient_funds(self):
+        wifs = ["cVJKkzZpEuVXvrM7Q5qza9W1zcU39DSFRDMoFmXMa9h7LARGTY7w"]
+        data = binascii.hexlify(b"f483")
+        def callback():
+            self.api.storenulldata(data, wifs)
+        self.assertRaises(exceptions.InsufficientFunds, callback)
 
     def test_store_txouts(self):
         wifs = [wallet["wif"]]
@@ -154,14 +154,14 @@ class TestStore(unittest.TestCase):
           "value" : 10000000
         }]
         result = self.api.storenulldata("f483", wifs, txouts=txouts)
-        expected = "9a015258e681e361d99c763aae09776f32b74cc021fb0151ec43fb4f72a65ef8"
+        expected = "b5446f2a78e80717c5d75fa3e67d52d3291c42da20c9b02afe27b6403db5906d"
         self.assertEqual(result, expected)
 
     def test_store_changeaddress(self):
         wifs = [wallet["wif"]]
         changeaddress = "mgBJ5bG9mQw8mHHcVEJghMamQEXeNLtvpt"
         result = self.api.storenulldata("f483", wifs, changeaddress)
-        expected = "186d1f6f97b56249ba9d9b13f2f50642b19877c356879888dde7ff160fae7d80"
+        expected = "44048c97399574643edf9db089b7f0f69d173d76a72ab12cc8e4670e6356f7d3"
         self.assertEqual(result, expected)
 
 

@@ -62,7 +62,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         <wifs>: '["privatekey_in_wif_format", ...]'
         """
         tx = deserialize.tx(rawtx)
-        keys = deserialize.keys(wifs)
+        keys = deserialize.keys(self.testnet, wifs)
         tx = control.signtx(self.service, self.testnet, tx, keys)
         return tx.as_hex()
 
@@ -74,7 +74,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
 
     def retrieveutxos(self, addresses):
         """Get current utxos for <address>."""
-        addresses = deserialize.addresses(addresses)
+        addresses = deserialize.addresses(self.testnet, addresses)
         spendables = self.service.spendables_for_addresses(addresses)
         def reformat(spendable):
             return {
@@ -102,7 +102,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         <wifs>: '["privatekey_in_wif_format", ...]'
         """
         nulldatatxout = deserialize.nulldatatxout(hexdata)
-        keys = deserialize.keys(wifs)
+        keys = deserialize.keys(self.testnet, wifs)
         txouts = deserialize.txouts(self.testnet, txouts) if txouts else []
         fee = deserialize.positiveinteger(fee)
         locktime = deserialize.positiveinteger(locktime)
@@ -118,27 +118,19 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
 
     def getaddress(self, wif):
         """ Return bitcoin address for given wallet. """
-        return deserialize.key(wif).address()
+        return deserialize.key(self.testnet, wif).address()
 
     def signdata(self, wif, hexdata):
         """ Signing <hexdata> with <wif> private key."""
         data = deserialize.binary(hexdata)
-        key = deserialize.key(wif)
-        address = key.address()
-        sigdata = control.signdata(data, key)
-
-        # TODO move adding recovery param to control
-        for i in range(4):
-            for compressed in [True, False]:
-                sig = serialize.signature(i, compressed, sigdata)
-                if self.verifysignature(address, sig, hexdata):
-                    return sig
-        raise Exception("Failed to serialize signature!")
+        key = deserialize.key(self.testnet, wif)
+        sigdata = control.signdata(self.testnet, data, key)
+        return serialize.signature(sigdata)
 
     def verifysignature(self, address, signature, hexdata):
         """ Verify <signature> of <hexdata> by <address>."""
         try:
-            address = deserialize.address(address)
+            address = deserialize.address(self.testnet, address)
             data = deserialize.binary(hexdata)
             signature = deserialize.signature(signature)
             return control.verifysignature(self.testnet, address,
