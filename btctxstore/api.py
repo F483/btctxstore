@@ -34,7 +34,8 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         """Writes <hexdata> as new nulldata output to <rawtx>."""
         tx = deserialize.unsignedtx(rawtx)
         nulldatatxout = deserialize.nulldatatxout(hexdata)
-        return control.addnulldata(tx, nulldatatxout).as_hex()
+        tx = control.addnulldata(tx, nulldatatxout)
+        return serialize.tx(tx)
 
     def getnulldata(self, rawtx):
         """Returns nulldata from <rawtx> as hexdata."""
@@ -54,8 +55,8 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         locktime = deserialize.positiveinteger(locktime)
         txins = deserialize.txins(txins)
         txouts = deserialize.txouts(self.testnet, txouts)
-        tx = Tx(1, txins, txouts, locktime)
-        return tx.as_hex()
+        tx = control.createtx(txins, txouts, locktime=locktime)
+        return serialize.tx(tx)
 
     def signtx(self, rawtx, wifs):
         """Sign <rawtx> with  given <wifs> as json data.
@@ -64,33 +65,26 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         tx = deserialize.tx(rawtx)
         keys = deserialize.keys(self.testnet, wifs)
         tx = control.signtx(self.service, self.testnet, tx, keys)
-        return tx.as_hex()
+        return serialize.tx(tx)
 
     def retrievetx(self, txid):
         """Returns rawtx for <txid>."""
         txid = deserialize.txid(txid)
         tx = self.service.get_tx(txid)
-        return tx.as_hex()
+        return serialize.tx(tx)
 
     def retrieveutxos(self, addresses):
         """Get current utxos for <address>."""
         addresses = deserialize.addresses(self.testnet, addresses)
-        spendables = self.service.spendables_for_addresses(addresses)
-        def reformat(spendable):
-            return {
-                "txid" : b2h_rev(spendable.tx_hash),
-                "index" : spendable.tx_out_index,
-                "value" : spendable.coin_value,
-                "script" : b2h(spendable.script)
-            }
-        return list(map(reformat, spendables))
+        spendables = control.retrieveutxos(self.service, addresses)
+        return serialize.utxos(spendables)
 
     def publish(self, rawtx):
         """Publish signed <rawtx> to bitcoin network."""
         tx = deserialize.signedtx(rawtx)
         if not self.dryrun:
             self.service.send_tx(tx)
-        return b2h_rev(tx.hash())
+        return serialize.txid(tx.hash())
 
     # TODO add storeaddressdata
     # TODO add retrieveaddressdata
@@ -109,7 +103,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         txid = control.storenulldata(self.service, self.testnet, nulldatatxout,
                                      keys, changeaddress, txouts,
                                      fee, locktime, publish=(not self.dryrun))
-        return b2h_rev(txid)
+        return serialize.txid(txid)
 
     def retrievenulldata(self, txid):
         """Returns nulldata stored in blockchain <txid> as hexdata."""
@@ -138,6 +132,17 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         except Exception as e: # FIXME catch on expected exceptions
             return False
 
+    def splitutxos(self, wif, limit=10000, fee=10000, maxoutputs=100):
+        """TODO doc string."""
+        key = deserialize.key(self.testnet, wif)
+        limit = deserialize.positiveinteger(limit)
+        fee = deserialize.positiveinteger(fee)
+        maxoutputs = deserialize.positiveinteger(maxoutputs)
+        spendables = control.retrieveutxos(service, [key.address()])
+        txids = control.splitutxos(self.service, self.testnet, key, spendables,
+                                   limit=limit, fee=fee, maxoutputs=maxoutputs,
+                                   publish=(not self.dryrun))
+        return serialize.txids(txids)
 
 
 

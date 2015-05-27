@@ -32,6 +32,7 @@ from pycoin.key.BIP32Node import BIP32Node
 from . import util
 from . import modsqrt
 from . import deserialize
+from . import serialize
 from . import exceptions
 
 
@@ -58,6 +59,14 @@ def getnulldata(tx):
     return h2b(tools.disassemble(out.script)[10:])
 
 
+def createtx(txins, txouts, locktime=0, keys=None, publish=False):
+    tx = Tx(1, txins, txouts, locktime)
+    if keys:
+        tx = signtx(service, testnet, tx, [key])
+    if publish:
+        service.send_tx(tx)
+
+
 def signtx(service, testnet, tx, keys):
     netcode = 'XTN' if testnet else 'BTC'
     secretexponents = list(map(lambda key: key.secret_exponent(), keys))
@@ -70,8 +79,14 @@ def signtx(service, testnet, tx, keys):
     return tx
 
 
-def findtxins(service, addresses, amount):
+def retrieveutxos(service, addresses):
     spendables = service.spendables_for_addresses(addresses)
+    spendables = sorted(spendables, key=lambda s: s.coin_value, reverse=True)
+    return spendables
+
+
+def findtxins(service, addresses, amount):
+    spendables = retrieveutxos(service, addresses)
     txins = []
     total = 0
     for spendable in spendables:
@@ -168,7 +183,7 @@ def recoverpublickey(G, order, r, s, i, e):
     """
     c = ecdsa.ecdsa.curve_secp256k1
 
-    # 1.1 Let x = r + jn 
+    # 1.1 Let x = r + jn
     x = r + (i // 2) * order
 
     # 1.3 point from x
@@ -228,5 +243,64 @@ def verifysignature(testnet, address, sig, data):
     public_pair = [Q.x(), Q.y()]
     recoveredaddress = public_pair_to_address(testnet, public_pair, compressed)
     return address == recoveredaddress
+
+
+def _taketxins(spendables, limit, maxoutputs, fee):
+    maxinput = limit * maxoutputs + fee
+    inputs = []
+    while True:
+        inputs_total = sum(list(map(lambda s: s.coin_value, inputs)))
+        if inputs_total > maxinput or not spendables:
+            break
+        inputs.append(spendables.pop())
+    txins = deserialize.txins(serialize.utxos(inputs))
+    return txins, inputs_total
+
+
+def _enoughtosplit(spendables, fee, limit):
+    total = sum(list(map(lambda s: s.coin_value, spendables)))
+    return total >= (fee + limit * 2)
+
+
+def _filterdust(spendables, fee, limit):
+    spendables = filter(lambda s: s.coin_value > fee, spendables)
+    spendables = filter(lambda s: s.coin_value > limit, spendables)
+    spendables = sorted(spendables, key=lambda s: s.coin_value)
+    return spendables
+
+
+def _outputs(testnet, inputs_total, fee, maxoutputs, limit, key):
+    txouts_total = inputs_total - fee
+    if txouts_total > (maxoutputs * limit):
+        txouts_cnt = maxoutputs
+    else:
+        txouts_cnt =  txouts_total // limit
+    txout_amount = txouts_total // txouts_cnt
+    rounded_amount = (txouts_total - txout_amount * txouts_cnt)
+    txouts = []
+    for i in range(txouts_cnt):
+        value = txout_amount + rounded_amount if i == 0 else txout_amount
+        txouts.append(deserialize.txout(testnet, key.address(), value))
+    return txouts
+
+
+def splitutxos(service, testnet, key, spendables,
+               limit=10000, fee=10000, maxoutputs=100, publish=True):
+
+    spendables = _filterdust(spendables, fee, limit)
+    if not _enoughtosplit(spendables, fee, limit):
+        return []
+    txins, inputs_total = _taketxins(spendables, limit, maxoutputs, fee)
+    txouts = _outputs(testnet, inputs_total, fee, maxoutputs, limit, key)
+    tx = createtx(txins, txouts, keys=[key], publish=publish)
+
+    # recurse for remaining spendables
+    return [tx.hash()] + splitutxos(service, testnet, key, spendables,
+                                    limit=limit, fee=fee, maxoutputs=maxoutputs,
+                                    publish=publish)
+
+
+
+
 
 
