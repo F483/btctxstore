@@ -215,5 +215,25 @@ class TestSignData(unittest.TestCase):
         self.assertEqual(valid, True)
 
 
+class TestSplitUtxos(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_singleinput(self):
+        wif = "cNHPbjVpkv4oqqKimBNp1UfQ2dhjETtRZw4KkHWtPgnU36SBtXub"
+        # address n4RHA7mxH8EYV7wMS8evtYRYwCpQYz6KuE
+        txids = self.api.splitutxos(wif, 10000000) # 100mBTC
+        print("TestSplitUtxos txids:", len(txids))
+        self.assertEqual(len(txids), 1)
+
+    def test_manyinputs(self):
+        wif = "cRoboMG5KM19VP8ZcVCDXGCfi1JJraKpw58ofe8v57j7vqDxaQ5m"
+        # address mqox6abLAiado9kFvX3EsHaVFbYVimSMCK
+        txids = self.api.splitutxos(wif, 100000) # 1mBTC
+        print("TestSplitUtxos txids:", len(txids))
+        self.assertEqual(len(txids), 6)
+
+
 if __name__ == '__main__':
     unittest.main()

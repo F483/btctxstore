@@ -108,18 +108,18 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         return self.getnulldata(rawtx)
 
     def getaddress(self, wif):
-        """ Return bitcoin address for given wallet. """
+        """Return bitcoin address for given wallet. """
         return deserialize.key(self.testnet, wif).address()
 
     def signdata(self, wif, hexdata):
-        """ Signing <hexdata> with <wif> private key."""
+        """Signing <hexdata> with <wif> private key."""
         data = deserialize.binary(hexdata)
         key = deserialize.key(self.testnet, wif)
         sigdata = control.signdata(self.testnet, data, key)
         return serialize.signature(sigdata)
 
     def verifysignature(self, address, signature, hexdata):
-        """ Verify <signature> of <hexdata> by <address>."""
+        """Verify <signature> of <hexdata> by <address>."""
         try:
             address = deserialize.address(self.testnet, address)
             data = deserialize.binary(hexdata)
@@ -129,14 +129,14 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         except:  # FIXME catch on expected exceptions
             return False
 
-    def splitutxos(self, wif, limit=10000, fee=10000, maxoutputs=100):
-        """TODO doc string."""
+    def splitutxos(self, wif, limit, fee=10000, maxoutputs=100):
+        """Split utxos of <wif> unitil <limit> or <maxoutputs> reached."""
         key = deserialize.key(self.testnet, wif)
         limit = deserialize.positiveinteger(limit)
         fee = deserialize.positiveinteger(fee)
         maxoutputs = deserialize.positiveinteger(maxoutputs)
         spendables = control.retrieveutxos(self.service, [key.address()])
         txids = control.splitutxos(self.service, self.testnet, key, spendables,
-                                   limit=limit, fee=fee, maxoutputs=maxoutputs,
+                                   limit, fee=fee, maxoutputs=maxoutputs,
                                    publish=(not self.dryrun))
         return serialize.txids(txids)

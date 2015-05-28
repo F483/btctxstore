@@ -277,21 +277,23 @@ def _outputs(testnet, inputs_total, fee, maxoutputs, limit, key):
     for i in range(txouts_cnt):
         value = txout_amount + rounded_amount if i == 0 else txout_amount
         txouts.append(deserialize.txout(testnet, key.address(), value))
+    assert(txouts_total == sum(list(map(lambda o: o.coin_value, txouts))))
     return txouts
 
 
-def splitutxos(service, testnet, key, spendables,
-               limit=10000, fee=10000, maxoutputs=100, publish=True):
+
+
+def splitutxos(service, testnet, key, spendables, limit,
+               fee=10000, maxoutputs=100, publish=True):
 
     spendables = _filterdust(spendables, fee, limit)
     if not _enoughtosplit(spendables, fee, limit):
         return []
     txins, inputs_total = _taketxins(spendables, limit, maxoutputs, fee)
     txouts = _outputs(testnet, inputs_total, fee, maxoutputs, limit, key)
-    tx = createtx(txins, txouts, keys=[key], publish=publish)
+    tx = createtx(service, testnet, txins, txouts, keys=[key], publish=publish)
 
     # recurse for remaining spendables
-    return [tx.hash()] + splitutxos(service, testnet, key, spendables,
-                                    limit=limit, fee=fee,
-                                    maxoutputs=maxoutputs,
+    return [tx.hash()] + splitutxos(service, testnet, key, spendables, limit,
+                                    fee=fee, maxoutputs=maxoutputs,
                                     publish=publish)
