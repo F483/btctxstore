@@ -1,5 +1,6 @@
 # source: http://eli.thegreenplace.net/2009/03/07/computing-modular-square-roots-in-python
 
+
 def modular_sqrt(a, p):
     """ Find a quadratic residue (mod p) of 'a'. p
         must be an odd prime.
@@ -93,5 +94,3 @@ def legendre_symbol(a, p):
     """
     ls = pow(a, (p - 1) // 2, p)
     return -1 if ls == p - 1 else ls
-
-

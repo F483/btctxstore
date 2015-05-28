@@ -7,8 +7,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import base64
-from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
-from . import util
+from pycoin.serialize import b2h, b2h_rev
+
+
+def nulldata(data):
+    return b2h(data)
 
 
 def txid(txhash):
@@ -30,10 +33,9 @@ def signature(sigdata):
 def utxos(spendables):
     def reformat(spendable):
         return {
-            "txid" : b2h_rev(spendable.tx_hash),
-            "index" : spendable.tx_out_index,
-            "value" : spendable.coin_value,
-            "script" : b2h(spendable.script)
+            "txid": b2h_rev(spendable.tx_hash),
+            "index": spendable.tx_out_index,
+            "value": spendable.coin_value,
+            "script": b2h(spendable.script)
         }
     return list(map(reformat, spendables))
-

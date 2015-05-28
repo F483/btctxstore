@@ -5,8 +5,6 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
-
-
 import io
 import re
 import os
@@ -14,21 +12,17 @@ import six
 import hashlib
 import ecdsa
 import struct
-from pycoin.key import Key
 from pycoin.serialize.bitcoin_streamer import stream_bc_int
-from pycoin import ecdsa as pycoin_ecdsa # pycoin rolling its own *sigh*
 from pycoin.tx.Tx import Tx
 from pycoin.encoding import hash160_sec_to_bitcoin_address
 from pycoin.encoding import public_pair_to_hash160_sec
 from pycoin.encoding import double_sha256
 from pycoin.tx.script import tools
-from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
+from pycoin.serialize import h2b
 from pycoin.tx.pay_to import build_hash160_lookup
 from pycoin.tx import SIGHASH_ALL
 from pycoin.tx.TxIn import TxIn
 from pycoin.key.BIP32Node import BIP32Node
-
-
 from . import util
 from . import modsqrt
 from . import deserialize
@@ -59,12 +53,14 @@ def getnulldata(tx):
     return h2b(tools.disassemble(out.script)[10:])
 
 
-def createtx(txins, txouts, locktime=0, keys=None, publish=False):
+def createtx(service, testnet, txins, txouts,
+             locktime=0, keys=None, publish=False):
     tx = Tx(1, txins, txouts, locktime)
     if keys:
-        tx = signtx(service, testnet, tx, [key])
+        tx = signtx(service, testnet, tx, keys)
     if publish:
         service.send_tx(tx)
+    return tx
 
 
 def signtx(service, testnet, tx, keys):
@@ -148,9 +144,9 @@ def bitcoinmessagehash(data):
 
 
 def add_recovery_params(i, compressed, sigdata):
-    params = 27 # signature parameters
-    params += i # add recovery parameter
-    params += 4 if compressed else 0 # add compressed flag
+    params = 27  # signature parameters
+    params += i  # add recovery parameter
+    params += 4 if compressed else 0  # add compressed flag
     return struct.pack(">B", params) + sigdata
 
 
@@ -187,15 +183,15 @@ def recoverpublickey(G, order, r, s, i, e):
     x = r + (i // 2) * order
 
     # 1.3 point from x
-    alpha = (x * x * x  + c.a() * x + c.b()) % c.p()
+    alpha = (x * x * x + c.a() * x + c.b()) % c.p()
     beta = modsqrt.modular_sqrt(alpha, c.p())
     y = beta if (beta - i) % 2 == 0 else c.p() - beta
 
     # 1.4 Check that nR is at infinity
     R = ecdsa.ellipticcurve.Point(c, x, y, order)
 
-    rInv = ecdsa.numbertheory.inverse_mod(r, order) # r^-1
-    eNeg = -e % order # -e
+    rInv = ecdsa.numbertheory.inverse_mod(r, order)  # r^-1
+    eNeg = -e % order  # -e
 
     # 1.6 compute Q = r^-1 (sR - eG)
     Q = rInv * (s * R + eNeg * G)
@@ -210,7 +206,7 @@ def parsesignature(sig, order):
 
     # parse parameters
     params = six.indexbytes(sig, 0) - 27
-    if params != (params & 7): # At most 3 bits
+    if params != (params & 7):  # At most 3 bits
         raise Exception('Invalid signature parameter!')
 
     # get compressed parameter
@@ -236,7 +232,7 @@ def verifysignature(testnet, address, sig, data):
     pub = ecdsa.VerifyingKey.from_public_point(Q, curve=ecdsa.curves.SECP256k1)
 
     # validate that recovered public key is correct
-    sigdecode=ecdsa.util.sigdecode_string
+    sigdecode = ecdsa.util.sigdecode_string
     pub.verify_digest(rsdata, digest, sigdecode=sigdecode)
 
     # validate that recovered address is correct
@@ -274,7 +270,7 @@ def _outputs(testnet, inputs_total, fee, maxoutputs, limit, key):
     if txouts_total > (maxoutputs * limit):
         txouts_cnt = maxoutputs
     else:
-        txouts_cnt =  txouts_total // limit
+        txouts_cnt = txouts_total // limit
     txout_amount = txouts_total // txouts_cnt
     rounded_amount = (txouts_total - txout_amount * txouts_cnt)
     txouts = []
@@ -296,11 +292,6 @@ def splitutxos(service, testnet, key, spendables,
 
     # recurse for remaining spendables
     return [tx.hash()] + splitutxos(service, testnet, key, spendables,
-                                    limit=limit, fee=fee, maxoutputs=maxoutputs,
+                                    limit=limit, fee=fee,
+                                    maxoutputs=maxoutputs,
                                     publish=publish)
-
-
-
-
-
-

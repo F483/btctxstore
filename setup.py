@@ -20,7 +20,7 @@ DOWNLOAD_URL = DOWNLOAD_BASEURL + "btctxstore-%s.tar.gz" % VERSION
 setup(
     name='btctxstore',
     version=VERSION,
-    description=('A library to read/write data to bitcoin transaction outputs.'),
+    description=('Library to read/write data to bitcoin transaction outputs.'),
     long_description=open("README.rst").read(),
     keywords=("Bitcoin, OP_RETURN, store, tx, transaction"),
     url='https://github.com/F483/btctxstore/',
@@ -36,11 +36,8 @@ setup(
         'ecdsa'
     ],
     tests_require=[
-      #'ipython',
-      #'pylint',
-      #'pudb' # import pudb; pu.db # set break point
+        #'ipython',
+        #'pudb' # import pudb; pu.db # set break point
     ],
     zip_safe=False
 )
-
-

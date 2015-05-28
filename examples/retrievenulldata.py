@@ -5,11 +5,9 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
-
 from btctxstore import BtcTxStore
 
-api = BtcTxStore(testnet=True, dryrun=True) # use testing setup for example
+api = BtcTxStore(testnet=True, dryrun=True)  # use testing setup for example
 txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
 hexnulldata = api.retrievenulldata(txid)
 print(hexnulldata)
-

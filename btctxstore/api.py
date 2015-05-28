@@ -6,17 +6,13 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
-
-
-from pycoin.tx.Tx import Tx
-from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
 from . import serialize
 from . import deserialize
 from . import control
-from . insight import InsightService # XXX rm when added to next pycoin version
+from . insight import InsightService  # XXX rm when added to pycoin
 
 
-class BtcTxStore(): # TODO use apigen when ported to python 3
+class BtcTxStore():  # TODO use apigen when ported to python 3
     """Bitcoin nulldata output io library."""
 
     def __init__(self, testnet=False, dryrun=False):
@@ -40,7 +36,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
     def getnulldata(self, rawtx):
         """Returns nulldata from <rawtx> as hexdata."""
         tx = deserialize.tx(rawtx)
-        return b2h(control.getnulldata(tx))
+        return serialize.nulldata(control.getnulldata(tx))
 
     def createkey(self):
         """Create new private key and return in wif format."""
@@ -55,7 +51,8 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         locktime = deserialize.positiveinteger(locktime)
         txins = deserialize.txins(txins)
         txouts = deserialize.txouts(self.testnet, txouts)
-        tx = control.createtx(txins, txouts, locktime=locktime)
+        tx = control.createtx(self.service, self.testnet, txins, txouts,
+                              locktime=locktime)
         return serialize.tx(tx)
 
     def signtx(self, rawtx, wifs):
@@ -129,7 +126,7 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
             signature = deserialize.signature(signature)
             return control.verifysignature(self.testnet, address,
                                            signature, data)
-        except Exception as e: # FIXME catch on expected exceptions
+        except:  # FIXME catch on expected exceptions
             return False
 
     def splitutxos(self, wif, limit=10000, fee=10000, maxoutputs=100):
@@ -138,11 +135,8 @@ class BtcTxStore(): # TODO use apigen when ported to python 3
         limit = deserialize.positiveinteger(limit)
         fee = deserialize.positiveinteger(fee)
         maxoutputs = deserialize.positiveinteger(maxoutputs)
-        spendables = control.retrieveutxos(service, [key.address()])
+        spendables = control.retrieveutxos(self.service, [key.address()])
         txids = control.splitutxos(self.service, self.testnet, key, spendables,
                                    limit=limit, fee=fee, maxoutputs=maxoutputs,
                                    publish=(not self.dryrun))
         return serialize.txids(txids)
-
-
-

@@ -4,6 +4,7 @@ btctxstore
 
 A library to read/write data to bitcoin transactions as nulldata outputs.
 
+
 ============
 Installation
 ============
@@ -25,7 +26,7 @@ Store data in blockchain in new transaction with nulldata output.
   import binascii
   from btctxstore import BtcTxStore
 
-  # Wallet used to pay for fee. Please do not spend the testnet coins is 
+  # Wallet used to pay for fee. Please do not spend the testnet coins is
   # this wallet or the example will fail due to lack of funds.
   wifs = ["cUZfG8KJ3BrXneg2LjUX4VoMg76Fcgx6QDiAZj2oGbuw6da8Lzv1"]
 
@@ -49,7 +50,7 @@ Retrieve transaction from blockchain and read data stored as nulldata output.
   # from examples/retrievenulldata.py
   from btctxstore import BtcTxStore
 
-  api = BtcTxStore(testnet=True, dryrun=True) # use testing setup for example
+  api = BtcTxStore(testnet=True, dryrun=True)  # use testing setup for example
   txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
   hexnulldata = api.retrievenulldata(txid)
   print(hexnulldata)
@@ -65,10 +66,10 @@ sign/verify data (bitcoind compatible)
   import binascii
   from btctxstore import BtcTxStore
 
-  api = BtcTxStore(testnet=True, dryrun=True) # use testing setup for example
-  wif = api.createkey() # create new private key
-  address = api.getaddress(wif) # get private key address
-  data = binascii.hexlify(b"messagetext") # hexlify messagetext
+  api = BtcTxStore(testnet=True, dryrun=True)  # use testing setup for example
+  wif = api.createkey()  # create new private key
+  address = api.getaddress(wif)  # get private key address
+  data = binascii.hexlify(b"messagetext")  # hexlify messagetext
 
   # sign data with private key
   signature = api.signdata(wif, data)

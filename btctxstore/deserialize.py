@@ -7,16 +7,13 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-import re
 import base64
 from pycoin.key import Key
 from pycoin.tx.Tx import Tx
-from pycoin.serialize import b2h, h2b, b2h_rev, h2b_rev
+from pycoin.serialize import b2h, h2b, h2b_rev
 from pycoin.tx.script import tools
 from pycoin.encoding import bitcoin_address_to_hash160_sec
 from pycoin.encoding import wif_to_secret_exponent
-from pycoin.encoding import sec_to_public_pair
-from pycoin.tx.pay_to import build_hash160_lookup
 from pycoin.tx.TxOut import TxOut
 from pycoin.tx.TxIn import TxIn
 from pycoin.key import validate
@@ -131,5 +128,3 @@ def key(testnet, wif):
 
 def keys(testnet, wifs):
     return list(map(lambda wif: key(testnet, wif), wifs))
-
-

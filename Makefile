@@ -12,7 +12,6 @@ help:
 
 clean:
 	@rm -rf env
-	@rm -rf apigen.egg-info
 	@rm -rf build
 	@rm -rf dist
 	@rm -rf *.egg
@@ -33,7 +32,6 @@ test:
 	# TODO add lint
 	# TODO add coverage
 	# import pudb; pu.db # set break point
-	# TODO use pycharm for pep8
 
 
 publish: test

@@ -6,8 +6,6 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
-
-
 import unittest
 from btctxstore import deserialize
 from btctxstore import exceptions
@@ -34,8 +32,8 @@ class TestKey(unittest.TestCase):
         mainnet_wif = "KzU3561hXZwFPrzmHkJ6FLWvykFJMQnMEwSKXW5VPpz6HcxuvpZq"
 
         # test positive
-        deserialize.key(True, testnet_wif) # testnet
-        deserialize.key(False, mainnet_wif) # mainnet
+        deserialize.key(True, testnet_wif)  # testnet
+        deserialize.key(False, mainnet_wif)  # mainnet
 
         # testnet negative
         def callback():
@@ -71,4 +69,3 @@ class TestAddress(unittest.TestCase):
         def callback():
             deserialize.address(True, mainnet_address)
         self.assertRaises(exceptions.InvalidAddress, callback)
-
