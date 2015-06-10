@@ -9,4 +9,4 @@ import codecs
 
 
 def bytestoint(data):
-    return int(codecs.encode(data, 'hex'), 16)
+    return int(codecs.encode(data, 'hex_codec'), 16)
