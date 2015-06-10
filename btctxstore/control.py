@@ -281,8 +281,6 @@ def _outputs(testnet, inputs_total, fee, maxoutputs, limit, key):
     return txouts
 
 
-
-
 def splitutxos(service, testnet, key, spendables, limit,
                fee=10000, maxoutputs=100, publish=True):
 

@@ -126,7 +126,11 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
             signature = deserialize.signature(signature)
             return control.verifysignature(self.testnet, address,
                                            signature, data)
-        except:  # FIXME catch on expected exceptions
+        # ()_()
+        # (O_o)
+        # ((")(")
+        # FIXME bunny does not like catch alls
+        except:
             return False
 
     def splitutxos(self, wif, limit, fee=10000, maxoutputs=100):

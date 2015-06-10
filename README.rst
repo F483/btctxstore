@@ -2,6 +2,23 @@
 btctxstore
 ##########
 
+
+|BuildLink|_ |CoverageLink|_ |LicenseLink|_ |IssuesLink|_
+
+
+.. |BuildLink| image:: https://travis-ci.org/Storj/btctxstore.svg
+.. _BuildLink: https://travis-ci.org/Storj/btctxstore
+
+.. |CoverageLink| image:: https://coveralls.io/repos/Storj/btctxstore/badge.svg
+.. _CoverageLink: https://coveralls.io/r/Storj/btctxstore
+
+.. |LicenseLink| image:: https://img.shields.io/badge/license-MIT-blue.svg
+.. _LicenseLink: https://raw.githubusercontent.com/F483/btctxstore/master/LICENSE
+
+.. |IssuesLink| image:: https://img.shields.io/github/issues/F483/btctxstore.svg
+.. _IssuesLink: https://github.com/F483/btctxstore/issues
+
+
 A library to read/write data to bitcoin transactions as nulldata outputs.
 
 
