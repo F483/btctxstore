@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 from . import serialize
 from . import deserialize
 from . import control
+from . import exceptions
 from . insight import InsightService  # XXX rm when added to pycoin
 
 
@@ -126,11 +127,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
             signature = deserialize.signature(signature)
             return control.verifysignature(self.testnet, address,
                                            signature, data)
-        # ()_()
-        # (O_o)
-        # ((")(")
-        # FIXME bunny does not like catch alls
-        except:
+        except exceptions.InvalidAddress:
             return False
 
     def splitutxos(self, wif, limit, fee=10000, maxoutputs=100):

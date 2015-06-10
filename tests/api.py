@@ -9,6 +9,7 @@ from __future__ import unicode_literals
 import json
 import binascii
 import unittest
+from pycoin.key import validate
 from btctxstore import BtcTxStore
 from btctxstore import exceptions
 
@@ -38,13 +39,23 @@ class TestCreateTx(unittest.TestCase):
     def setUp(self):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
-    def test_create(self):
+    def test_createtx(self):
         locktime = 0
         txins = fixtures["createtx"]["txins"]
         txouts = fixtures["createtx"]["txouts"]
         expected = fixtures["createtx"]["expected"]
         result = self.api.createtx(txins, txouts, locktime)
         self.assertEqual(result, expected)
+
+
+class TestCreateKey(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_createkey(self):
+        wif = self.api.createkey()
+        self.assertTrue(validate.is_wif_valid(wif, allowable_netcodes=['XTN']))
 
 
 class TestRetrieveTx(unittest.TestCase):
@@ -135,9 +146,15 @@ class TestRetrieve(unittest.TestCase):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_retrieve(self):
-        txid = fixtures["retrieve"]["txid"]
+        txid = fixtures["retrieve"]["nulldata_txid"]
         result = self.api.retrievenulldata(txid)
         self.assertEqual(result, "f483")
+
+    def test_retrieve_nothing(self):
+        def callback():
+            txid = fixtures["retrieve"]["nonulldata_txid"]
+            result = self.api.retrievenulldata(txid)
+        self.assertRaises(exceptions.NoNulldataOutput, callback)
 
 
 class TestGetAddress(unittest.TestCase):
@@ -190,7 +207,11 @@ class TestVerifySignature(unittest.TestCase):
         self.assertEqual(result, False)
 
     def test_verify_signature_params(self):
-        pass  # TODO test incorrect signature params (first byte)
+        wif = "cSuT2J14dYbe1zvB5z5WTXeRcMbj4tnoKssAK1ZQbnX5HtHfW3bi"
+        data = binascii.hexlify(b"testmessage")
+        address = self.api.getaddress(wif)
+        sig = "///////////////////////////////////////////////////////////////////////////////////////="
+        self.assertFalse(self.api.verifysignature(address, sig, data))
 
 
 class TestSignData(unittest.TestCase):
@@ -223,14 +244,14 @@ class TestSplitUtxos(unittest.TestCase):
     def test_singleinput(self):
         wif = "cNHPbjVpkv4oqqKimBNp1UfQ2dhjETtRZw4KkHWtPgnU36SBtXub"
         # address n4RHA7mxH8EYV7wMS8evtYRYwCpQYz6KuE
-        txids = self.api.splitutxos(wif, 10000000) # 100mBTC
+        txids = self.api.splitutxos(wif, 10000000)  # 100mBTC
         print("TestSplitUtxos txids:", len(txids))
         self.assertEqual(len(txids), 1)
 
     def test_manyinputs(self):
         wif = "cRoboMG5KM19VP8ZcVCDXGCfi1JJraKpw58ofe8v57j7vqDxaQ5m"
         # address mqox6abLAiado9kFvX3EsHaVFbYVimSMCK
-        txids = self.api.splitutxos(wif, 100000) # 1mBTC
+        txids = self.api.splitutxos(wif, 100000)  # 1mBTC
         print("TestSplitUtxos txids:", len(txids))
         self.assertEqual(len(txids), 6)
 

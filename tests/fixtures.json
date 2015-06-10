@@ -90,7 +90,8 @@
 
 
     "retrieve": {
-        "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
+        "nulldata_txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb",
+        "nonulldata_txid": "2e2c434bda22abd4d5f6e32caf26b79be826a3b3cafbfcade9ceac219aa07ad9"
     },
 
 

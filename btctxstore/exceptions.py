@@ -42,3 +42,17 @@ class ExistingNulldataOutput(Exception):
     def __init__(self):
         msg = "Transaction already has a nulldata output!"
         super(ExistingNulldataOutput, self).__init__(msg)
+
+
+class InvalidSignarureParameter(Exception):
+
+    def __init__(self):
+        msg = "Invalid signature parameters!"
+        super(InvalidSignarureParameter, self).__init__(msg)
+
+
+class NoNulldataOutput(Exception):
+    
+    def __init__(self, tx):
+        msg = "No nulldata output for tx '%s'!" % tx.as_hex()
+        super(NoNulldataOutput, self).__init__(msg)

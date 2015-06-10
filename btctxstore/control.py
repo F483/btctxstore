@@ -49,7 +49,7 @@ def addnulldata(tx, nulldatatxout):
 def getnulldata(tx):
     out = getnulldataout(tx)
     if not out:
-        return ""
+        raise exceptions.NoNulldataOutput(tx)
     return h2b(tools.disassemble(out.script)[10:])
 
 
@@ -207,7 +207,7 @@ def parsesignature(sig, order):
     # parse parameters
     params = six.indexbytes(sig, 0) - 27
     if params != (params & 7):  # At most 3 bits
-        raise Exception('Invalid signature parameter!')
+        raise exceptions.InvalidSignarureParameter()
 
     # get compressed parameter
     compressed = bool(params & 4)
@@ -220,25 +220,34 @@ def parsesignature(sig, order):
 
 def verifysignature(testnet, address, sig, data):
 
-    # parse sig data
-    G = ecdsa.ecdsa.generator_secp256k1
-    order = G.order()
-    rsdata, r, s, i, compressed = parsesignature(sig, order)
-    digest = bitcoinmessagehash(data)
-    e = util.bytestoint(digest)
+    try:
+        # parse sig data
+        G = ecdsa.ecdsa.generator_secp256k1
+        order = G.order()
+        rsdata, r, s, i, compressed = parsesignature(sig, order)
+        digest = bitcoinmessagehash(data)
+        e = util.bytestoint(digest)
 
-    # recover public key
-    Q = recoverpublickey(G, order, r, s, i, e)
-    pub = ecdsa.VerifyingKey.from_public_point(Q, curve=ecdsa.curves.SECP256k1)
+        # recover public key
+        Q = recoverpublickey(G, order, r, s, i, e)
+        pub = ecdsa.VerifyingKey.from_public_point(Q, curve=ecdsa.curves.SECP256k1)
 
-    # validate that recovered public key is correct
-    sigdecode = ecdsa.util.sigdecode_string
-    pub.verify_digest(rsdata, digest, sigdecode=sigdecode)
+        # validate that recovered public key is correct
+        sigdecode = ecdsa.util.sigdecode_string
+        pub.verify_digest(rsdata, digest, sigdecode=sigdecode)
 
-    # validate that recovered address is correct
-    public_pair = [Q.x(), Q.y()]
-    recoveredaddress = public_pair_to_address(testnet, public_pair, compressed)
-    return address == recoveredaddress
+        # validate that recovered address is correct
+        public_pair = [Q.x(), Q.y()]
+        recoveredaddress = public_pair_to_address(testnet, public_pair, compressed)
+        return address == recoveredaddress
+
+    # ()_()
+    # (O_o)
+    # ((")(")
+    except AssertionError: # recoverpublickey failed
+        return False
+    except exceptions.InvalidSignarureParameter:
+        return False
 
 
 def _taketxins(spendables, limit, maxoutputs, fee):
