@@ -60,13 +60,18 @@ class TestCreateKey(unittest.TestCase):
 
 class TestRetrieveTx(unittest.TestCase):
 
-    def setUp(self):
-        self.api = BtcTxStore(dryrun=True, testnet=True)
+    def test_retrievetx_testnet(self):
+        api = BtcTxStore(dryrun=True, testnet=True)
+        txid = fixtures["retrievetx"]["testnet"]["txid"]
+        expected = fixtures["retrievetx"]["testnet"]["expected"]
+        result = api.retrievetx(txid)
+        self.assertEqual(result, expected)
 
-    def test_retrievetx(self):
-        txid = fixtures["retrievetx"]["txid"]
-        expected = fixtures["retrievetx"]["expected"]
-        result = self.api.retrievetx(txid)
+    def test_retrievetx_mainnet(self):
+        api = BtcTxStore(dryrun=True, testnet=False)
+        txid = fixtures["retrievetx"]["mainnet"]["txid"]
+        expected = fixtures["retrievetx"]["mainnet"]["expected"]
+        result = api.retrievetx(txid)
         self.assertEqual(result, expected)
 
 
