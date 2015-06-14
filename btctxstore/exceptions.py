@@ -18,6 +18,13 @@ class MaxNulldataExceeded(InvalidInput):
         super(MaxNulldataExceeded, self).__init__(msg)
 
 
+class InvalidHash160DataSize(InvalidInput):
+
+    def __init__(self, bytecount):
+        msg = "Hash160 data != 160bits: %sbits given!" % (bytecount * 8)
+        super(InvalidHash160DataSize, self).__init__(msg)
+
+
 class InvalidAddress(InvalidInput):
 
     def __init__(self, address):

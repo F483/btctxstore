@@ -22,14 +22,22 @@ class TestIO(unittest.TestCase):
     def setUp(self):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
-    def test_readwrite(self):
-        rawtx = self.api.addnulldata(fixtures["unsignedrawtx"], "f483")
+    def test_readwrite_nulldata(self):
+        rawtx = self.api.createtx([],[])
+        rawtx = self.api.addnulldata(rawtx, "f483")
         data = self.api.getnulldata(rawtx)
         self.assertEqual(data, "f483")
+    
+    def test_readwrite_hash160data(self):
+        rawtx = self.api.createtx([],[])
+        rawtx = self.api.addhash160data(rawtx, 10 * "f483")
+        data = self.api.gethash160data(rawtx, 0)
+        self.assertEqual(data, 10 * "f483")
 
     def test_only_one_nulldata_output(self):
         def callback():
-            rawtx = self.api.addnulldata(fixtures["unsignedrawtx"], "f483")
+            rawtx = self.api.createtx([],[])
+            rawtx = self.api.addnulldata(rawtx, "f483")
             self.api.addnulldata(rawtx, "f483")  # writing second fails
         self.assertRaises(exceptions.ExistingNulldataOutput, callback)
 

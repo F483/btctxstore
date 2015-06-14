@@ -10,7 +10,7 @@ import base64
 from pycoin.serialize import b2h, b2h_rev
 
 
-def nulldata(data):
+def data(data):
     return b2h(data)
 
 

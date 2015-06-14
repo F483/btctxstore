@@ -10,8 +10,9 @@ import re
 import os
 import six
 import hashlib
-import ecdsa
 import struct
+import ecdsa
+from ecdsa.curves import SECP256k1
 from pycoin.serialize.bitcoin_streamer import stream_bc_int
 from pycoin.tx.Tx import Tx
 from pycoin.encoding import hash160_sec_to_bitcoin_address
@@ -30,15 +31,15 @@ from . import serialize
 from . import exceptions
 
 
-def getnulldataout(tx):
+def get_nulldata_output(tx):
     for out in tx.txs_out:
         if re.match("^OP_RETURN", tools.disassemble(out.script)):
             return out
     return None
 
 
-def addnulldata(tx, nulldatatxout):
-    if getnulldataout(tx):
+def add_nulldata_output(tx, nulldatatxout):
+    if get_nulldata_output(tx):
         raise exceptions.ExistingNulldataOutput()
     # TODO validate transaction is unsigned
     tx.txs_out.append(nulldatatxout)
@@ -46,24 +47,36 @@ def addnulldata(tx, nulldatatxout):
     return tx
 
 
-def getnulldata(tx):
-    out = getnulldataout(tx)
+def add_hash160data_output(tx, hash160data_txout):
+    # TODO validate transaction is unsigned
+    tx.txs_out.append(hash160data_txout)
+    # TODO validate transaction
+    return tx
+
+
+def get_hash160_data(tx, output_index):
+    out = tx.txs_out[output_index]
+    return h2b(tools.disassemble(out.script)[18:58])
+
+
+def get_nulldata(tx):
+    out = get_nulldata_output(tx)
     if not out:
         raise exceptions.NoNulldataOutput(tx)
     return h2b(tools.disassemble(out.script)[10:])
 
 
-def createtx(service, testnet, txins, txouts,
-             locktime=0, keys=None, publish=False):
+def create_tx(service, testnet, txins, txouts,
+              locktime=0, keys=None, publish=False):
     tx = Tx(1, txins, txouts, locktime)
     if keys:
-        tx = signtx(service, testnet, tx, keys)
+        tx = sign_tx(service, testnet, tx, keys)
     if publish:
         service.send_tx(tx)
     return tx
 
 
-def signtx(service, testnet, tx, keys):
+def sign_tx(service, testnet, tx, keys):
     netcode = 'XTN' if testnet else 'BTC'
     secretexponents = list(map(lambda key: key.secret_exponent(), keys))
     lookup = build_hash160_lookup(secretexponents)
@@ -75,14 +88,14 @@ def signtx(service, testnet, tx, keys):
     return tx
 
 
-def retrieveutxos(service, addresses):
+def retrieve_utxos(service, addresses):
     spendables = service.spendables_for_addresses(addresses)
     spendables = sorted(spendables, key=lambda s: s.coin_value, reverse=True)
     return spendables
 
 
-def findtxins(service, addresses, amount):
-    spendables = retrieveutxos(service, addresses)
+def find_txins(service, addresses, amount):
+    spendables = retrieve_utxos(service, addresses)
     txins = []
     total = 0
     for spendable in spendables:
@@ -99,9 +112,9 @@ def public_pair_to_address(testnet, public_pair, compressed):
     return hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
 
 
-def storenulldata(service, testnet, nulldatatxout, keys,
-                  changeaddress=None, txouts=None, fee=10000,
-                  locktime=0, publish=True):
+def store_nulldata(service, testnet, nulldatatxout, keys,
+                   changeaddress=None, txouts=None, fee=10000,
+                   locktime=0, publish=True):
 
     # get required satoshis
     txouts = txouts if txouts else []
@@ -109,7 +122,7 @@ def storenulldata(service, testnet, nulldatatxout, keys,
 
     # get txins
     addresses = list(map(lambda key: key.address(), keys))
-    txins, total = findtxins(service, addresses, required)
+    txins, total = find_txins(service, addresses, required)
     if total < required:
         raise exceptions.InsufficientFunds(required, total)
 
@@ -120,58 +133,57 @@ def storenulldata(service, testnet, nulldatatxout, keys,
 
     # create, sign and publish tx
     tx = Tx(1, txins, txouts, locktime)
-    tx = signtx(service, testnet, tx, keys)
+    tx = sign_tx(service, testnet, tx, keys)
     if publish:
         service.send_tx(tx)
     return tx.hash()
 
 
-def createkey(testnet):
+def create_key(testnet):
     netcode = 'XTN' if testnet else 'BTC'
     return BIP32Node.from_master_secret(os.urandom(64), netcode=netcode)
 
 
-def encodevarint(value):
+def _encode_varint(value):
     f = io.BytesIO()
     stream_bc_int(f, value)
     return f.getvalue()
 
 
-def bitcoinmessagehash(data):
+def _bitcoin_message_hash(data):
     prefix = b"\x18Bitcoin Signed Message:\n"
-    varint = encodevarint(len(data))
+    varint = _encode_varint(len(data))
     return double_sha256(prefix + varint + data)
 
 
-def add_recovery_params(i, compressed, sigdata):
+def _add_recovery_params(i, compressed, sigdata):
     params = 27  # signature parameters
     params += i  # add recovery parameter
     params += 4 if compressed else 0  # add compressed flag
     return struct.pack(">B", params) + sigdata
 
 
-def signdata(testnet, data, key):
+def sign_data(testnet, data, key):
     address = key.address()
-    digest = bitcoinmessagehash(data)
-    secp256k1 = ecdsa.curves.SECP256k1
+    digest = _bitcoin_message_hash(data)
     secretexponent = key.secret_exponent()
     sigencode = ecdsa.util.sigencode_string
 
     # sign data
-    pk = ecdsa.SigningKey.from_secret_exponent(secretexponent, curve=secp256k1)
+    pk = ecdsa.SigningKey.from_secret_exponent(secretexponent, curve=SECP256k1)
     sigdata = pk.sign_digest_deterministic(digest, hashfunc=hashlib.sha256,
                                            sigencode=sigencode)
 
     # add recovery params
     for i in range(4):
         for compressed in [True, False]:
-            sig = add_recovery_params(i, compressed, sigdata)
-            if verifysignature(testnet, address, sig, data):
+            sig = _add_recovery_params(i, compressed, sigdata)
+            if verify_signature(testnet, address, sig, data):
                 return sig
     raise Exception("Failed to serialize signature!")
 
 
-def recoverpublickey(G, order, r, s, i, e):
+def _recover_public_key(G, order, r, s, i, e):
     """Recover a public key from a signature.
     See SEC 1: Elliptic Curve Cryptography, section 4.1.6, "Public
     Key Recovery Operation".
@@ -198,7 +210,7 @@ def recoverpublickey(G, order, r, s, i, e):
     return Q
 
 
-def parsesignature(sig, order):
+def _parse_signature(sig, order):
 
     # parse r and s
     rsdata = sig[1:]
@@ -218,19 +230,19 @@ def parsesignature(sig, order):
     return rsdata, r, s, i, compressed
 
 
-def verifysignature(testnet, address, sig, data):
+def verify_signature(testnet, address, sig, data):
 
     try:
         # parse sig data
         G = ecdsa.ecdsa.generator_secp256k1
         order = G.order()
-        rsdata, r, s, i, compressed = parsesignature(sig, order)
-        digest = bitcoinmessagehash(data)
+        rsdata, r, s, i, compressed = _parse_signature(sig, order)
+        digest = _bitcoin_message_hash(data)
         e = util.bytestoint(digest)
 
         # recover public key
-        Q = recoverpublickey(G, order, r, s, i, e)
-        pub = ecdsa.VerifyingKey.from_public_point(Q, curve=ecdsa.curves.SECP256k1)
+        Q = _recover_public_key(G, order, r, s, i, e)
+        pub = ecdsa.VerifyingKey.from_public_point(Q, curve=SECP256k1)
 
         # validate that recovered public key is correct
         sigdecode = ecdsa.util.sigdecode_string
@@ -238,19 +250,17 @@ def verifysignature(testnet, address, sig, data):
 
         # validate that recovered address is correct
         public_pair = [Q.x(), Q.y()]
-        recoveredaddress = public_pair_to_address(testnet, public_pair, compressed)
+        recoveredaddress = public_pair_to_address(testnet, public_pair,
+                                                  compressed)
         return address == recoveredaddress
 
-    # ()_()
-    # (O_o)
-    # ((")(")
-    except AssertionError: # recoverpublickey failed
+    except AssertionError:  # _recover_public_key failed
         return False
     except exceptions.InvalidSignarureParameter:
         return False
 
 
-def _taketxins(spendables, limit, maxoutputs, fee):
+def _take_txins(spendables, limit, maxoutputs, fee):
     maxinput = limit * maxoutputs + fee
     inputs = []
     while True:
@@ -262,12 +272,12 @@ def _taketxins(spendables, limit, maxoutputs, fee):
     return txins, inputs_total
 
 
-def _enoughtosplit(spendables, fee, limit):
+def _enough_to_split(spendables, fee, limit):
     total = sum(list(map(lambda s: s.coin_value, spendables)))
     return total >= (fee + limit * 2)
 
 
-def _filterdust(spendables, fee, limit):
+def _filter_dust(spendables, fee, limit):
     spendables = filter(lambda s: s.coin_value > fee, spendables)
     spendables = filter(lambda s: s.coin_value > limit, spendables)
     spendables = sorted(spendables, key=lambda s: s.coin_value)
@@ -290,17 +300,18 @@ def _outputs(testnet, inputs_total, fee, maxoutputs, limit, key):
     return txouts
 
 
-def splitutxos(service, testnet, key, spendables, limit,
-               fee=10000, maxoutputs=100, publish=True):
+def split_utxos(service, testnet, key, spendables, limit,
+                fee=10000, maxoutputs=100, publish=True):
 
-    spendables = _filterdust(spendables, fee, limit)
-    if not _enoughtosplit(spendables, fee, limit):
+    spendables = _filter_dust(spendables, fee, limit)
+    if not _enough_to_split(spendables, fee, limit):
         return []
-    txins, inputs_total = _taketxins(spendables, limit, maxoutputs, fee)
+    txins, inputs_total = _take_txins(spendables, limit, maxoutputs, fee)
     txouts = _outputs(testnet, inputs_total, fee, maxoutputs, limit, key)
-    tx = createtx(service, testnet, txins, txouts, keys=[key], publish=publish)
+    tx = create_tx(service, testnet, txins, txouts,
+                   keys=[key], publish=publish)
 
     # recurse for remaining spendables
-    return [tx.hash()] + splitutxos(service, testnet, key, spendables, limit,
-                                    fee=fee, maxoutputs=maxoutputs,
-                                    publish=publish)
+    return [tx.hash()] + split_utxos(service, testnet, key, spendables, limit,
+                                     fee=fee, maxoutputs=maxoutputs,
+                                     publish=publish)

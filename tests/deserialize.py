@@ -14,15 +14,37 @@ from btctxstore import exceptions
 class TestNulldataTxOut(unittest.TestCase):
 
     def test_max_data(self):
+
         # fourty bytes ok
         max_data = 40 * b"aa"
-        deserialize.nulldatatxout(max_data)
+        deserialize.nulldata_txout(max_data)
 
         # > fourty bytes fails
         def callback():
-            over_max_data = 41 * "aa"
-            deserialize.nulldatatxout(over_max_data)
+            over_max_data = 41 * b"aa"
+            deserialize.nulldata_txout(over_max_data)
         self.assertRaises(exceptions.MaxNulldataExceeded, callback)
+
+
+class TestHash160DataTxOut(unittest.TestCase):
+
+    def test_data_size(self):
+
+        # twenty bytes ok
+        max_data = 20 * b"aa"
+        deserialize.hash160data_txout(max_data)
+
+        # > twenty bytes fails
+        def callback():
+            over_max_data = 21 * b"aa"
+            deserialize.hash160data_txout(over_max_data)
+        self.assertRaises(exceptions.InvalidHash160DataSize, callback)
+
+        # < twenty bytes fails
+        def callback():
+            over_max_data = 19 * b"aa"
+            deserialize.hash160data_txout(over_max_data)
+        self.assertRaises(exceptions.InvalidHash160DataSize, callback)
 
 
 class TestKey(unittest.TestCase):

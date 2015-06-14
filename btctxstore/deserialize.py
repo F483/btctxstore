@@ -58,7 +58,7 @@ def flag(flag):
     return bool(flag)
 
 
-def positiveinteger(number):
+def positive_integer(number):
     number = int(number)
     if number < 0:
         raise exceptions.InvalidInput("Integer may not be < 0!")
@@ -82,14 +82,14 @@ def addresses(testnet, addresses):
 
 def txin(txhash, index):
     txhash = txid(txhash)
-    index = positiveinteger(index)
+    index = positive_integer(index)
     return TxIn(txhash, index)
 
 
 def txout(testnet, targetaddress, value):
     testnet = flag(testnet)
     targetaddress = address(testnet, targetaddress)
-    value = positiveinteger(value)
+    value = positive_integer(value)
     prefix = b'\x6f' if testnet else b"\0"
     hash160 = b2h(bitcoin_address_to_hash160_sec(targetaddress, prefix))
     script_text = "OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG" % hash160
@@ -105,7 +105,7 @@ def txouts(testnet, data):
     return list(map(lambda x: txout(testnet, x['address'], x['value']), data))
 
 
-def nulldatatxout(hexdata):
+def nulldata_txout(hexdata):
     data = binary(hexdata)
     if len(data) > 40:
         raise exceptions.MaxNulldataExceeded(len(data))
@@ -114,7 +114,16 @@ def nulldatatxout(hexdata):
     return TxOut(0, script_bin)
 
 
-def secretexponents(testnet, wifs):
+def hash160data_txout(hexdata, value=548):
+    data = binary(hexdata)
+    if len(data) != 20:  # 160 bit
+        raise exceptions.InvalidHash160DataSize(len(data))
+    script_text = "OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG" % b2h(data)
+    script_bin = tools.compile(script_text)
+    return TxOut(value, script_bin)
+
+
+def secret_exponents(testnet, wifs):
     valid_prefixes = [b'\xef' if testnet else b'\x80']
     return list(map(lambda x: wif_to_secret_exponent(x, valid_prefixes), wifs))
 

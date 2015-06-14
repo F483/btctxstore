@@ -24,24 +24,36 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    # TODO add addaddressdata (encoded as hash160, see cryptograffiti.info)
-    # TODO add getaddressdata (encoded as hash160, see cryptograffiti.info)
+    def addhash160data(self, rawtx, hexdata, value=548):
+        """Writes <hexdata> as new Pay-to-PubkeyHash output to <rawtx>."""
+        tx = deserialize.unsignedtx(rawtx)
+        value = deserialize.positive_integer(value)
+        hash160data_txout = deserialize.hash160data_txout(hexdata, value)
+        tx = control.add_hash160data_output(tx, hash160data_txout)
+        return serialize.tx(tx)
+
+    def gethash160data(self, rawtx, output_index):
+        tx = deserialize.unsignedtx(rawtx)
+        output_index = deserialize.positive_integer(output_index)
+        data = control.get_hash160_data(tx, output_index)
+        return serialize.data(data)
 
     def addnulldata(self, rawtx, hexdata):
         """Writes <hexdata> as new nulldata output to <rawtx>."""
         tx = deserialize.unsignedtx(rawtx)
-        nulldatatxout = deserialize.nulldatatxout(hexdata)
-        tx = control.addnulldata(tx, nulldatatxout)
+        nulldata_txout = deserialize.nulldata_txout(hexdata)
+        tx = control.add_nulldata_output(tx, nulldata_txout)
         return serialize.tx(tx)
 
     def getnulldata(self, rawtx):
         """Returns nulldata from <rawtx> as hexdata."""
         tx = deserialize.tx(rawtx)
-        return serialize.nulldata(control.getnulldata(tx))
+        data = control.get_nulldata(tx)
+        return serialize.data(data)
 
     def createkey(self):
         """Create new private key and return in wif format."""
-        bip32node = control.createkey(self.testnet)
+        bip32node = control.create_key(self.testnet)
         return bip32node.wif()
 
     def createtx(self, txins, txouts, locktime="0"):
@@ -49,11 +61,11 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         <txins>: '[{"txid" : hexdata, "index" : integer}, ...]'
         <txouts>: '[{"address" : hexdata, "value" : satoshis}, ...]'
         """
-        locktime = deserialize.positiveinteger(locktime)
+        locktime = deserialize.positive_integer(locktime)
         txins = deserialize.txins(txins)
         txouts = deserialize.txouts(self.testnet, txouts)
-        tx = control.createtx(self.service, self.testnet, txins, txouts,
-                              locktime=locktime)
+        tx = control.create_tx(self.service, self.testnet, txins, txouts,
+                               locktime=locktime)
         return serialize.tx(tx)
 
     def signtx(self, rawtx, wifs):
@@ -62,7 +74,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         """
         tx = deserialize.tx(rawtx)
         keys = deserialize.keys(self.testnet, wifs)
-        tx = control.signtx(self.service, self.testnet, tx, keys)
+        tx = control.sign_tx(self.service, self.testnet, tx, keys)
         return serialize.tx(tx)
 
     def retrievetx(self, txid):
@@ -74,7 +86,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
     def retrieveutxos(self, addresses):
         """Get current utxos for <address>."""
         addresses = deserialize.addresses(self.testnet, addresses)
-        spendables = control.retrieveutxos(self.service, addresses)
+        spendables = control.retrieve_utxos(self.service, addresses)
         return serialize.utxos(spendables)
 
     def publish(self, rawtx):
@@ -84,23 +96,21 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
             self.service.send_tx(tx)
         return serialize.txid(tx.hash())
 
-    # TODO add storeaddressdata
-    # TODO add retrieveaddressdata
-
     def storenulldata(self, hexdata, wifs, changeaddress=None, txouts=None,
                       fee="10000", locktime="0"):
         """Store <hexdata> in blockchain and return new txid.
         Utxos taken from <wifs> and change sent to <changeaddress>.
         <wifs>: '["privatekey_in_wif_format", ...]'
         """
-        nulldatatxout = deserialize.nulldatatxout(hexdata)
+        nulldata_txout = deserialize.nulldata_txout(hexdata)
         keys = deserialize.keys(self.testnet, wifs)
         txouts = deserialize.txouts(self.testnet, txouts) if txouts else []
-        fee = deserialize.positiveinteger(fee)
-        locktime = deserialize.positiveinteger(locktime)
-        txid = control.storenulldata(self.service, self.testnet, nulldatatxout,
-                                     keys, changeaddress, txouts,
-                                     fee, locktime, publish=(not self.dryrun))
+        fee = deserialize.positive_integer(fee)
+        locktime = deserialize.positive_integer(locktime)
+        txid = control.store_nulldata(self.service, self.testnet,
+                                      nulldata_txout, keys, changeaddress,
+                                      txouts, fee, locktime,
+                                      publish=(not self.dryrun))
         return serialize.txid(txid)
 
     def retrievenulldata(self, txid):
@@ -116,7 +126,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         """Signing <hexdata> with <wif> private key."""
         data = deserialize.binary(hexdata)
         key = deserialize.key(self.testnet, wif)
-        sigdata = control.signdata(self.testnet, data, key)
+        sigdata = control.sign_data(self.testnet, data, key)
         return serialize.signature(sigdata)
 
     def verifysignature(self, address, signature, hexdata):
@@ -125,19 +135,19 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
             address = deserialize.address(self.testnet, address)
             data = deserialize.binary(hexdata)
             signature = deserialize.signature(signature)
-            return control.verifysignature(self.testnet, address,
-                                           signature, data)
+            return control.verify_signature(self.testnet, address,
+                                            signature, data)
         except exceptions.InvalidAddress:
             return False
 
     def splitutxos(self, wif, limit, fee=10000, maxoutputs=100):
         """Split utxos of <wif> unitil <limit> or <maxoutputs> reached."""
         key = deserialize.key(self.testnet, wif)
-        limit = deserialize.positiveinteger(limit)
-        fee = deserialize.positiveinteger(fee)
-        maxoutputs = deserialize.positiveinteger(maxoutputs)
-        spendables = control.retrieveutxos(self.service, [key.address()])
-        txids = control.splitutxos(self.service, self.testnet, key, spendables,
-                                   limit, fee=fee, maxoutputs=maxoutputs,
-                                   publish=(not self.dryrun))
+        limit = deserialize.positive_integer(limit)
+        fee = deserialize.positive_integer(fee)
+        maxoutputs = deserialize.positive_integer(maxoutputs)
+        spendables = control.retrieve_utxos(self.service, [key.address()])
+        txids = control.split_utxos(self.service, self.testnet, key, spendables,
+                                    limit, fee=fee, maxoutputs=maxoutputs,
+                                    publish=(not self.dryrun))
         return serialize.txids(txids)

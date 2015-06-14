@@ -5,7 +5,7 @@
 help:
 	@echo "Some usefull development shortcuts."
 	@echo "  clean      Remove all generated files."
-	@echo "  test       Run tests and analisys tools."
+	@echo "  test       Run tests and analysis tools."
 	@echo "  devsetup   Setup development environment."
 	@echo "  publish    Build and upload package to pypi."
 
@@ -28,9 +28,6 @@ devsetup: clean
 test:
 	env/py2/bin/python setup.py test
 	env/py3/bin/python setup.py test
-	# TODO add static analisys
-	# TODO add lint
-	# TODO add coverage
 	# import pudb; pu.db # set break point
 
 
