@@ -15,6 +15,7 @@ clean:
 	@rm -rf build
 	@rm -rf dist
 	@rm -rf *.egg
+	@rm -rf *.egg-info
 	@find | grep -i ".*\.pyc$$" | xargs -r -L1 rm
 
 

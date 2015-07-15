@@ -9,5 +9,5 @@ from btctxstore import BtcTxStore
 
 api = BtcTxStore(testnet=True, dryrun=True)  # use testing setup for example
 txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
-hexnulldata = api.retrievenulldata(txid)
+hexnulldata = api.retrieve_nulldata(txid)
 print(hexnulldata)

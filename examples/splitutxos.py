@@ -15,5 +15,5 @@ wif = "cUZfG8KJ3BrXneg2LjUX4VoMg76Fcgx6QDiAZj2oGbuw6da8Lzv1"
 api = BtcTxStore(testnet=True, dryrun=True)
 
 limit = 10000000  # 0.1BTC
-txids = api.splitutxos(wif, limit)
+txids = api.split_utxos(wif, limit)
 print(txids)

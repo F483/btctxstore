@@ -39,7 +39,7 @@ Store data in blockchain in new transaction with nulldata output.
 
 .. code:: python
 
-  # from examples/storenulldata.py
+  # from examples/store_nulldata.py
   import binascii
   from btctxstore import BtcTxStore
 
@@ -52,7 +52,7 @@ Store data in blockchain in new transaction with nulldata output.
 
   # store data in blockchain as nulldata output (max 40bytes)
   data = binascii.hexlify(b"github.com/F483/btctxstore")
-  txid = api.storenulldata(data, wifs)
+  txid = api.store_nulldata(data, wifs)
   print(txid)
 
 
@@ -64,12 +64,12 @@ Retrieve transaction from blockchain and read data stored as nulldata output.
 
 .. code:: python
 
-  # from examples/retrievenulldata.py
+  # from examples/retrieve_nulldata.py
   from btctxstore import BtcTxStore
 
   api = BtcTxStore(testnet=True, dryrun=True)  # use testing setup for example
   txid = "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
-  hexnulldata = api.retrievenulldata(txid)
+  hexnulldata = api.retrieve_nulldata(txid)
   print(hexnulldata)
 
 
@@ -84,16 +84,16 @@ sign/verify data (bitcoind compatible)
   from btctxstore import BtcTxStore
 
   api = BtcTxStore(testnet=True, dryrun=True)  # use testing setup for example
-  wif = api.createkey()  # create new private key
-  address = api.getaddress(wif)  # get private key address
+  wif = api.create_key()  # create new private key
+  address = api.get_address(wif)  # get private key address
   data = binascii.hexlify(b"messagetext")  # hexlify messagetext
 
   # sign data with private key
-  signature = api.signdata(wif, data)
+  signature = api.sign_data(wif, data)
   print("signature:", signature)
 
   # verify signature (no public or private key needed)
-  isvalid = api.verifysignature(address, signature, data)
+  isvalid = api.verify_signature(address, signature, data)
   print("valid signature" if isvalid else "invalid signature")
 
 
@@ -101,11 +101,11 @@ sign/verify data (bitcoind compatible)
 Split utxos
 ===========
 
-Split utxos of wallet unitil limit or maxoutputs reached.
+Split utxos of wallet unitil limit or max_outputs reached.
 
 .. code:: python
 
-  # from examples/splitutxos.py
+  # from examples/split_utxos.py
   from btctxstore import BtcTxStore
 
   # Please do not spend the testnet coins is this wallet
@@ -116,5 +116,5 @@ Split utxos of wallet unitil limit or maxoutputs reached.
   api = BtcTxStore(testnet=True, dryrun=True)
 
   limit = 10000000  # 0.1BTC
-  txids = api.splitutxos(wif, limit)
+  txids = api.split_utxos(wif, limit)
   print(txids)

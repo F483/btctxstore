@@ -9,14 +9,14 @@ import binascii
 from btctxstore import BtcTxStore
 
 api = BtcTxStore(testnet=True, dryrun=True)  # use testing setup for example
-wif = api.createkey()  # create new private key
-address = api.getaddress(wif)  # get private key address
+wif = api.create_key()  # create new private key
+address = api.get_address(wif)  # get private key address
 data = binascii.hexlify(b"messagetext")  # hexlify messagetext
 
 # sign data with private key
-signature = api.signdata(wif, data)
+signature = api.sign_data(wif, data)
 print("signature:", signature)
 
 # verify signature (no public or private key needed)
-isvalid = api.verifysignature(address, signature, data)
+isvalid = api.verify_signature(address, signature, data)
 print("valid signature" if isvalid else "invalid signature")

@@ -17,5 +17,5 @@ api = BtcTxStore(testnet=True, dryrun=True)
 
 # store data in blockchain as nulldata output (max 40bytes)
 data = binascii.hexlify(b"github.com/F483/btctxstore")
-txid = api.storenulldata(data, wifs)
+txid = api.store_nulldata(data, wifs)
 print(txid)

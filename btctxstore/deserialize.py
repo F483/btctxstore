@@ -87,12 +87,12 @@ def txin(txhash, index):
     return TxIn(txhash, index)
 
 
-def txout(testnet, targetaddress, value):
+def txout(testnet, target_address, value):
     testnet = flag(testnet)
-    targetaddress = address(testnet, targetaddress)
+    target_address = address(testnet, target_address)
     value = positive_integer(value)
     prefix = b'\x6f' if testnet else b"\0"
-    hash160 = b2h(bitcoin_address_to_hash160_sec(targetaddress, prefix))
+    hash160 = b2h(bitcoin_address_to_hash160_sec(target_address, prefix))
     script_text = "OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG" % hash160
     script_bin = tools.compile(script_text)
     return TxOut(value, script_bin)

@@ -18,7 +18,7 @@
                 }
             ],
             "wifs": ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"],
-            "changeaddress": "mh3vRZ7uEneRM14QA3f9MbG4qAeQagCQ6y",
+            "change_address": "mh3vRZ7uEneRM14QA3f9MbG4qAeQagCQ6y",
             "expected": "0100000001222712a5f394f9cb6c205de573340f4f41390ddf9f44456e009499c4630b7aba0100000000ffffffff03b0710b00000000001976a91422c0f934b5346bd3e14dd47c2eb26c4bdf15eab988aca8420f00000000001976a91436016996a73708c5faa17ac9b76ec380941e545a88acf87ef700000000001976a91410d3758346f3de941b287f80a8a568da8dfa4a4b88ac00000000"
         },
         "nochange": {
@@ -38,7 +38,7 @@
     },
 
 
-    "createtx": {
+    "create_tx": {
         "txins": [
             {
                 "txid": "33a184cba7cf96cc167780561d261201cef0fb424d6591588d88e61bcfdd09c8",
@@ -63,7 +63,7 @@
     },
 
 
-    "retrievetx": {
+    "retrieve_tx": {
         "testnet": {
             "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb",
             "expected": "0100000001f2963731aa6b1e27a2f94d79620fad643e9e65741b16dadd4e77489c34f20ae2010000008a473044022054d89d41e9a3df9ea6ac367e0a062bd7c65c50232ff36d1f9287cd1851c7444e022069736675af9b94340d64b2b67913c07c4fc2f24006e77ad4df5a13a26e1200350141040319ffdcba35ef3d2577cdf6f07483f4b30865f695d366f02926db1ddd0c03544150b65124baf42601945d1c848bca7970cfa29f538f4ad8cd2564b8f80bb10cffffffff020000000000000000046a02f48370811201000000001976a914f4131906b10615a61af347c56f1223ddc214f95c88ac00000000"
@@ -85,7 +85,7 @@
     },
 
 
-    "signtx": {
+    "sign_tx": {
         "txins": [{
             "index": 1,
             "txid": "987451c344c504d07c1fa12cfbf84b5346535da5154006f6dc8399a8fae127eb"
@@ -99,7 +99,7 @@
     },
 
 
-    "storenulldata": {
+    "store_nulldata": {
         "alpha": {
             "wifs": ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"],
             "expected" : "0a6675f32c20aa74218130210ad817f6e2a55fac0ced8b49516a72a98f47ae81"
@@ -119,9 +119,9 @@
             }],
             "expected": "b5446f2a78e80717c5d75fa3e67d52d3291c42da20c9b02afe27b6403db5906d"
         },
-        "changeaddress": {
+        "change_address": {
             "wifs": ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"],
-            "changeaddress": "mgBJ5bG9mQw8mHHcVEJghMamQEXeNLtvpt",
+            "change_address": "mgBJ5bG9mQw8mHHcVEJghMamQEXeNLtvpt",
             "expected": "44048c97399574643edf9db089b7f0f69d173d76a72ab12cc8e4670e6356f7d3"
         }
     },
@@ -133,7 +133,7 @@
     },
 
 
-    "verifysignature": {
+    "verify_signature": {
         "positive": {
             "address": "mkRqiCnLFFsEH6ezsE1RiMxEjLRXZzWjwe",
             "signature": "H8wq7z8or7jGGT06ZJ0dC1+wnmRLY/fWnW2SRSRPtypaBAFJAtYhcOl+0jyjujEio91/7eFEW9tuM/WZOusSEGc="

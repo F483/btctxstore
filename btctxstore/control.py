@@ -67,8 +67,8 @@ def get_nulldata(tx):
 
 
 def create_tx(service, testnet, txins, txouts,
-              locktime=0, keys=None, publish=False):
-    tx = Tx(1, txins, txouts, locktime)
+              lock_time=0, keys=None, publish=False):
+    tx = Tx(1, txins, txouts, lock_time)
     if keys:
         tx = sign_tx(service, testnet, tx, keys)
     if publish:
@@ -110,26 +110,6 @@ def public_pair_to_address(testnet, public_pair, compressed):
     prefix = b'\x6f' if testnet else b"\0"
     hash160 = public_pair_to_hash160_sec(public_pair, compressed=compressed)
     return hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
-
-
-def store_nulldata(service, testnet, nulldatatxout, keys,
-                   changeaddress=None, txouts=None, fee=10000,
-                   locktime=0, publish=True):
-    # create tx
-    txouts = txouts if txouts else []
-    tx = Tx(1, [], txouts + [nulldatatxout], locktime)
-
-    # add inputs
-    add_inputs(service, testnet, tx, keys,
-               changeaddress=changeaddress, fee=fee)
-
-    # sign tx
-    tx = sign_tx(service, testnet, tx, keys)
-
-    # publish tx
-    if publish:
-        service.send_tx(tx)
-    return tx
 
 
 def create_key(testnet):
@@ -253,8 +233,8 @@ def verify_signature(testnet, address, sig, data):
         return False
 
 
-def _take_txins(spendables, limit, maxoutputs, fee):
-    maxinput = limit * maxoutputs + fee
+def _take_txins(spendables, limit, max_outputs, fee):
+    maxinput = limit * max_outputs + fee
     inputs = []
     while True:
         inputs_total = sum(list(map(lambda s: s.coin_value, inputs)))
@@ -277,10 +257,10 @@ def _filter_dust(spendables, fee, limit):
     return spendables
 
 
-def _outputs(testnet, inputs_total, fee, maxoutputs, limit, key):
+def _outputs(testnet, inputs_total, fee, max_outputs, limit, key):
     txouts_total = inputs_total - fee
-    if txouts_total > (maxoutputs * limit):
-        txouts_cnt = maxoutputs
+    if txouts_total > (max_outputs * limit):
+        txouts_cnt = max_outputs
     else:
         txouts_cnt = txouts_total // limit
     txout_amount = txouts_total // txouts_cnt
@@ -294,23 +274,23 @@ def _outputs(testnet, inputs_total, fee, maxoutputs, limit, key):
 
 
 def split_utxos(service, testnet, key, spendables, limit,
-                fee=10000, maxoutputs=100, publish=True):
+                fee=10000, max_outputs=100, publish=True):
 
     spendables = _filter_dust(spendables, fee, limit)
     if not _enough_to_split(spendables, fee, limit):
         return []
-    txins, inputs_total = _take_txins(spendables, limit, maxoutputs, fee)
-    txouts = _outputs(testnet, inputs_total, fee, maxoutputs, limit, key)
+    txins, inputs_total = _take_txins(spendables, limit, max_outputs, fee)
+    txouts = _outputs(testnet, inputs_total, fee, max_outputs, limit, key)
     tx = create_tx(service, testnet, txins, txouts,
                    keys=[key], publish=publish)
 
     # recurse for remaining spendables
     return [tx.hash()] + split_utxos(service, testnet, key, spendables, limit,
-                                     fee=fee, maxoutputs=maxoutputs,
+                                     fee=fee, max_outputs=max_outputs,
                                      publish=publish)
 
 
-def add_inputs(service, testnet, tx, keys, changeaddress=None, fee=10000):
+def add_inputs(service, testnet, tx, keys, change_address=None, fee=10000):
 
     # add inputs
     required = sum([out.coin_value for out in tx.txs_out]) + fee
@@ -321,8 +301,8 @@ def add_inputs(service, testnet, tx, keys, changeaddress=None, fee=10000):
     tx.txs_in += txins
 
     # add change output
-    changeaddress = changeaddress if changeaddress else addresses[0]
-    changeout = deserialize.txout(testnet, changeaddress, total - required)
+    change_address = change_address if change_address else addresses[0]
+    changeout = deserialize.txout(testnet, change_address, total - required)
     tx.txs_out.append(changeout)
 
     return tx
