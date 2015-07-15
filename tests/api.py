@@ -17,26 +17,49 @@ from btctxstore import exceptions
 fixtures = json.load(open("tests/fixtures.json"))
 
 
+class TestAddInputs(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_add_inputs_withchange(self):
+        txouts = fixtures["add_inputs"]["withchange"]["txouts"]
+        wifs = fixtures["add_inputs"]["withchange"]["wifs"]
+        changeaddress = fixtures["add_inputs"]["withchange"]["changeaddress"]
+        expected = fixtures["add_inputs"]["withchange"]["expected"]
+        rawtx = self.api.createtx(txouts=txouts)
+        result = self.api.add_inputs(rawtx, wifs, changeaddress)
+        self.assertEqual(expected, result)
+
+    def test_add_inputs_nochange(self):
+        txouts = fixtures["add_inputs"]["nochange"]["txouts"]
+        wifs = fixtures["add_inputs"]["nochange"]["wifs"]
+        expected = fixtures["add_inputs"]["nochange"]["expected"]
+        rawtx = self.api.createtx(txouts=txouts)
+        result = self.api.add_inputs(rawtx, wifs)
+        self.assertEqual(expected, result)
+
+
 class TestIO(unittest.TestCase):
 
     def setUp(self):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
     def test_readwrite_nulldata(self):
-        rawtx = self.api.createtx([],[])
+        rawtx = self.api.createtx()
         rawtx = self.api.addnulldata(rawtx, "f483")
         data = self.api.getnulldata(rawtx)
         self.assertEqual(data, "f483")
     
     def test_readwrite_hash160data(self):
-        rawtx = self.api.createtx([],[])
+        rawtx = self.api.createtx()
         rawtx = self.api.addhash160data(rawtx, 10 * "f483")
         data = self.api.gethash160data(rawtx, 0)
         self.assertEqual(data, 10 * "f483")
 
     def test_only_one_nulldata_output(self):
         def callback():
-            rawtx = self.api.createtx([],[])
+            rawtx = self.api.createtx()
             rawtx = self.api.addnulldata(rawtx, "f483")
             self.api.addnulldata(rawtx, "f483")  # writing second fails
         self.assertRaises(exceptions.ExistingNulldataOutput, callback)
@@ -258,14 +281,12 @@ class TestSplitUtxos(unittest.TestCase):
         wif = "cNHPbjVpkv4oqqKimBNp1UfQ2dhjETtRZw4KkHWtPgnU36SBtXub"
         # address n4RHA7mxH8EYV7wMS8evtYRYwCpQYz6KuE
         txids = self.api.splitutxos(wif, 10000000)  # 100mBTC
-        print("TestSplitUtxos txids:", len(txids))
         self.assertEqual(len(txids), 1)
 
     def test_manyinputs(self):
         wif = "cRoboMG5KM19VP8ZcVCDXGCfi1JJraKpw58ofe8v57j7vqDxaQ5m"
         # address mqox6abLAiado9kFvX3EsHaVFbYVimSMCK
         txids = self.api.splitutxos(wif, 100000)  # 1mBTC
-        print("TestSplitUtxos txids:", len(txids))
         self.assertEqual(len(txids), 6)
 
 

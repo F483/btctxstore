@@ -5,6 +5,39 @@
     },
 
 
+    "add_inputs": {
+        "withchange": {
+            "txouts": [
+                {
+                    "address": "migiScBNvVKYwEiCFhgBNGtZ87cdygtuSQ",
+                    "value": "750000"
+                },
+                {
+                    "address": "mkSWUYy3ggmbfGMf4PrjKj4LdU45Ytt2DN",
+                    "value": "1000104"
+                }
+            ],
+            "wifs": ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"],
+            "changeaddress": "mh3vRZ7uEneRM14QA3f9MbG4qAeQagCQ6y",
+            "expected": "0100000001222712a5f394f9cb6c205de573340f4f41390ddf9f44456e009499c4630b7aba0100000000ffffffff03b0710b00000000001976a91422c0f934b5346bd3e14dd47c2eb26c4bdf15eab988aca8420f00000000001976a91436016996a73708c5faa17ac9b76ec380941e545a88acf87ef700000000001976a91410d3758346f3de941b287f80a8a568da8dfa4a4b88ac00000000"
+        },
+        "nochange": {
+            "txouts": [
+                {
+                    "address": "migiScBNvVKYwEiCFhgBNGtZ87cdygtuSQ",
+                    "value": "750000"
+                },
+                {
+                    "address": "mkSWUYy3ggmbfGMf4PrjKj4LdU45Ytt2DN",
+                    "value": "1000104"
+                }
+            ],
+            "wifs": ["92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo"],
+            "expected": "0100000001222712a5f394f9cb6c205de573340f4f41390ddf9f44456e009499c4630b7aba0100000000ffffffff03b0710b00000000001976a91422c0f934b5346bd3e14dd47c2eb26c4bdf15eab988aca8420f00000000001976a91436016996a73708c5faa17ac9b76ec380941e545a88acf87ef700000000001976a914f4131906b10615a61af347c56f1223ddc214f95c88ac00000000"
+        }
+    },
+
+
     "createtx": {
         "txins": [
             {
@@ -73,7 +106,7 @@
         },
         "beta": {
             "wifs": ["cUZfG8KJ3BrXneg2LjUX4VoMg76Fcgx6QDiAZj2oGbuw6da8Lzv1"],
-            "expected": "faeea065164d2e3e4ba0441e2c5008f9b711d524a1a8040ada5e3a0b00e6eb5e"
+            "expected": "124b19edc78150d21e68d2d7dcc62223aad901823560c9eca853aa8438dd01f3"
         },
         "insufficient_funds": {
             "wifs": ["cVJKkzZpEuVXvrM7Q5qza9W1zcU39DSFRDMoFmXMa9h7LARGTY7w"]

@@ -115,28 +115,21 @@ def public_pair_to_address(testnet, public_pair, compressed):
 def store_nulldata(service, testnet, nulldatatxout, keys,
                    changeaddress=None, txouts=None, fee=10000,
                    locktime=0, publish=True):
-
-    # get required satoshis
+    # create tx
     txouts = txouts if txouts else []
-    required = sum(list(map(lambda txout: txout.coin_value, txouts))) + fee
+    tx = Tx(1, [], txouts + [nulldatatxout], locktime)
 
-    # get txins
-    addresses = list(map(lambda key: key.address(), keys))
-    txins, total = find_txins(service, addresses, required)
-    if total < required:
-        raise exceptions.InsufficientFunds(required, total)
+    # add inputs
+    add_inputs(service, testnet, tx, keys,
+               changeaddress=changeaddress, fee=fee)
 
-    # setup txouts
-    changeaddress = changeaddress if changeaddress else addresses[0]
-    changeout = deserialize.txout(testnet, changeaddress, total - required)
-    txouts = txouts + [nulldatatxout, changeout]
-
-    # create, sign and publish tx
-    tx = Tx(1, txins, txouts, locktime)
+    # sign tx
     tx = sign_tx(service, testnet, tx, keys)
+
+    # publish tx
     if publish:
         service.send_tx(tx)
-    return tx.hash()
+    return tx
 
 
 def create_key(testnet):
@@ -315,3 +308,21 @@ def split_utxos(service, testnet, key, spendables, limit,
     return [tx.hash()] + split_utxos(service, testnet, key, spendables, limit,
                                      fee=fee, maxoutputs=maxoutputs,
                                      publish=publish)
+
+
+def add_inputs(service, testnet, tx, keys, changeaddress=None, fee=10000):
+
+    # add inputs
+    required = sum([out.coin_value for out in tx.txs_out]) + fee
+    addresses = [key.address() for key in keys]
+    txins, total = find_txins(service, addresses, required)
+    if total < required:
+        raise exceptions.InsufficientFunds(required, total)
+    tx.txs_in += txins
+
+    # add change output
+    changeaddress = changeaddress if changeaddress else addresses[0]
+    changeout = deserialize.txout(testnet, changeaddress, total - required)
+    tx.txs_out.append(changeout)
+
+    return tx

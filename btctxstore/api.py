@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # coding: utf-8
 # Copyright (c) 2015 Fabian Barkhau <fabian.barkhau@gmail.com>
 # License: MIT (see LICENSE file)
@@ -13,6 +12,9 @@ from . import exceptions
 from . insight import InsightService  # XXX rm when added to pycoin
 
 
+DUST_LIMIT = 548
+
+
 class BtcTxStore():  # TODO use apigen when ported to python 3
     """Bitcoin nulldata output io library."""
 
@@ -24,7 +26,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    def addhash160data(self, rawtx, hexdata, value=548):
+    def addhash160data(self, rawtx, hexdata, value=DUST_LIMIT):
         """Writes <hexdata> as new Pay-to-PubkeyHash output to <rawtx>."""
         tx = deserialize.unsignedtx(rawtx)
         value = deserialize.positive_integer(value)
@@ -56,16 +58,32 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         bip32node = control.create_key(self.testnet)
         return bip32node.wif()
 
-    def createtx(self, txins, txouts, locktime="0"):
+    def createtx(self, txins=None, txouts=None, locktime=0):
         """Create unsigned rawtx with given txins/txouts as json data.
         <txins>: '[{"txid" : hexdata, "index" : integer}, ...]'
         <txouts>: '[{"address" : hexdata, "value" : satoshis}, ...]'
         """
+        txins = [] if txins is None else txins
+        txouts = [] if txouts is None else txouts
         locktime = deserialize.positive_integer(locktime)
         txins = deserialize.txins(txins)
         txouts = deserialize.txouts(self.testnet, txouts)
         tx = control.create_tx(self.service, self.testnet, txins, txouts,
                                locktime=locktime)
+        return serialize.tx(tx)
+
+    def add_inputs(self, rawtx, wifs, changeaddress=None, fee=10000):
+        """Add sufficient inputs from given <wifs> to cover <rawtx> outputs
+        and <fee>. If no <changeaddress> is given, change will be sent to
+        first wif.
+        """
+        tx = deserialize.tx(rawtx)
+        keys = deserialize.keys(self.testnet, wifs)
+        fee = deserialize.positive_integer(fee)
+        if changeaddress is not None:
+            changeaddress = deserialize.address(self.testnet, changeaddress)
+        tx = control.add_inputs(self.service, self.testnet, tx, keys,
+                                changeaddress=changeaddress, fee=fee)
         return serialize.tx(tx)
 
     def signtx(self, rawtx, wifs):
@@ -97,7 +115,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         return serialize.txid(tx.hash())
 
     def storenulldata(self, hexdata, wifs, changeaddress=None, txouts=None,
-                      fee="10000", locktime="0"):
+                      fee=10000, locktime=0):
         """Store <hexdata> in blockchain and return new txid.
         Utxos taken from <wifs> and change sent to <changeaddress>.
         <wifs>: '["privatekey_in_wif_format", ...]'
@@ -107,11 +125,10 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         txouts = deserialize.txouts(self.testnet, txouts) if txouts else []
         fee = deserialize.positive_integer(fee)
         locktime = deserialize.positive_integer(locktime)
-        txid = control.store_nulldata(self.service, self.testnet,
-                                      nulldata_txout, keys, changeaddress,
-                                      txouts, fee, locktime,
-                                      publish=(not self.dryrun))
-        return serialize.txid(txid)
+        tx = control.store_nulldata(self.service, self.testnet, nulldata_txout,
+                                    keys, changeaddress, txouts, fee, locktime,
+                                    publish=(not self.dryrun))
+        return serialize.txid(tx.hash())
 
     def retrievenulldata(self, txid):
         """Returns nulldata stored in blockchain <txid> as hexdata."""
@@ -147,7 +164,8 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         fee = deserialize.positive_integer(fee)
         maxoutputs = deserialize.positive_integer(maxoutputs)
         spendables = control.retrieve_utxos(self.service, [key.address()])
-        txids = control.split_utxos(self.service, self.testnet, key, spendables,
-                                    limit, fee=fee, maxoutputs=maxoutputs,
+        txids = control.split_utxos(self.service, self.testnet, key,
+                                    spendables, limit, fee=fee,
+                                    maxoutputs=maxoutputs,
                                     publish=(not self.dryrun))
         return serialize.txids(txids)
