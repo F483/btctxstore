@@ -115,7 +115,7 @@ def nulldata_txout(hexdata):
     return TxOut(0, script_bin)
 
 
-def hash160data_txout(hexdata, value=548):
+def hash160data_txout(hexdata, value=548):  # FIXME get dust from common
     data = binary(hexdata)
     if len(data) != 20:  # 160 bit
         raise exceptions.InvalidHash160DataSize(len(data))

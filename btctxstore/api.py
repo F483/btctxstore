@@ -12,7 +12,7 @@ from . import exceptions
 from . insight import InsightService  # XXX rm when added to pycoin
 
 
-DUST_LIMIT = 548
+DUST_LIMIT = 548  # FIXME move to common
 
 
 class BtcTxStore():  # TODO use apigen when ported to python 3
@@ -26,9 +26,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    #########################
-    # wif and address calls #
-    #########################
+    ###################
+    # wif and address #
+    ###################
 
     def create_key(self):
         """Create new private key and return in wif format."""
@@ -39,9 +39,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         """Return bitcoin address for given wallet. """
         return deserialize.key(self.testnet, wif).address()
 
-    #####################
-    # transaction calls #
-    #####################
+    ###############
+    # transaction #
+    ###############
 
     def create_tx(self, txins=None, txouts=None, lock_time=0):
         """Create unsigned rawtx with given txins/txouts as json data.
@@ -80,9 +80,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         tx = control.sign_tx(self.service, self.testnet, tx, keys)
         return serialize.tx(tx)
 
-    #######################
-    # blockchain io calls #
-    #######################
+    #################
+    # blockchain io #
+    #################
 
     def retrieve_tx(self, txid):
         """Returns rawtx for <txid>."""
@@ -103,9 +103,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
             self.service.send_tx(tx)
         return serialize.txid(tx.hash())
 
-    #################
-    # signing calls #
-    #################
+    ###########
+    # signing #
+    ###########
 
     def sign_data(self, wif, hexdata):
         """Signing <hexdata> with <wif> private key."""
@@ -125,9 +125,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         except exceptions.InvalidAddress:
             return False
 
-    #####################
-    # hash160data calls #
-    #####################
+    ###############
+    # hash160data #
+    ###############
 
     def add_hash160data(self, rawtx, hexdata, value=DUST_LIMIT):
         """Writes <hexdata> as new Pay-to-PubkeyHash output to <rawtx>."""
@@ -138,14 +138,31 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         return serialize.tx(tx)
 
     def get_hash160data(self, rawtx, output_index):
+        """TODO doc string"""
         tx = deserialize.unsignedtx(rawtx)
         output_index = deserialize.positive_integer(output_index)
         data = control.get_hash160_data(tx, output_index)
         return serialize.data(data)
 
-    ##################
-    # nulldata calls #
-    ##################
+    def store_hash160data(self, hexdata, wifs, change_address=None,
+                          txouts=None, fee=10000, lock_time=0,
+                          value=DUST_LIMIT):
+        """TODO doc string"""
+        rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
+        rawtx = self.add_hash160data(rawtx, hexdata, value=value)
+        rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
+                                fee=fee)
+        rawtx = self.sign_tx(rawtx, wifs)
+        return self.publish(rawtx)
+
+    def retrieve_hash160data(self, txid, output_index):
+        """TODO doc string"""
+        rawtx = self.retrieve_tx(txid)
+        return self.get_hash160_data(rawtx, output_index)
+
+    ############
+    # nulldata #
+    ############
 
     def add_nulldata(self, rawtx, hexdata):
         """Writes <hexdata> as new nulldata output to <rawtx>."""
@@ -168,7 +185,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         """
         rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
         rawtx = self.add_nulldata(rawtx, hexdata)
-        rawtx = self.add_inputs(rawtx, wifs, change_address=change_address, 
+        rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
         rawtx = self.sign_tx(rawtx, wifs)
         return self.publish(rawtx)
@@ -178,9 +195,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         rawtx = self.retrieve_tx(txid)
         return self.get_nulldata(rawtx)
 
-    ##############
-    # misc calls #
-    ##############
+    ########
+    # misc #
+    ########
 
     def split_utxos(self, wif, limit, fee=10000, max_outputs=100):
         """Split utxos of <wif> unitil <limit> or <max_outputs> reached."""
