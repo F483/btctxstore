@@ -79,6 +79,16 @@ class TestIO(unittest.TestCase):
         self.assertEqual(hash160hex, sender_hash160hex)
 
         # get broadcast message from tx
+        result = self.api.get_broadcast_message(rawtx)
+        self.assertEqual(result["address"], sender_address)
+        self.assertEqual(result["message"], message)
+        
+        # check signature is valid
+        hex_message = binascii.hexlify(result["message"].encode('utf-8'))
+        valid_signature = self.api.verify_signature(result["address"],
+                                                    result["signature"],
+                                                    hex_message)
+        self.assertTrue(valid_signature)
 
     def test_only_one_nulldata_output(self):
         def callback():

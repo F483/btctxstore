@@ -79,3 +79,10 @@ class MaxDataBlobSizeExceeded(Exception):
         msg_txt = "Max data size exceeded! '{0}' given, limit is '{1}' !"
         msg = msg_txt.format(max_data_size, data_size)
         super(MaxDataBlobSizeExceeded, self).__init__(msg)
+
+
+class NoBroadcastMessage(Exception):
+    
+    def __init__(self, tx):
+        msg = "No broadcast message stored in tx '%s'!" % tx.as_hex()
+        super(NoBroadcastMessage, self).__init__(msg)

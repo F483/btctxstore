@@ -50,9 +50,12 @@ def _hash160_to_address(testnet, hash160):
 
 def add_broadcast_message(testnet, tx, message, sender_key,
                           dust_limit=common.DUST_LIMIT):
-    msg_data = zlib.compress(message.encode('utf-8'))
+    msg_data = message.encode('utf-8')
     signature = sign_data(testnet, msg_data, sender_key)
     hash160 = _address_to_hash160(testnet, sender_key.address())
+
+    # compress after signing in case implementations compress differently
+    msg_data = zlib.compress(msg_data, 9)
 
     data = signature    # 65 byte message signature
     data += 13 * b'\0'  # 13 byte padding so sender hash160 aligns with txout
@@ -63,7 +66,34 @@ def add_broadcast_message(testnet, tx, message, sender_key,
 
 
 def get_broadcast_message(testnet, tx):
-    pass
+
+    try:
+        data = get_data_blob(tx)
+    except exceptions.NoDataBlob:
+        raise exceptions.NoBroadcastMessage(tx)
+
+    min_data = 65 + 13 + 20 + 0  # signature + padding + hash160 + message
+    if len(data) < min_data:  # not enough data 
+        raise exceptions.NoBroadcastMessage(tx)
+
+    signature = data[:65] # get signature
+    data = data[65:]  # remove signature
+    data = data[13:]  # remove padding
+    address = _hash160_to_address(testnet, data[:20]) # get address
+    msg_data = data[20:]  # get message data
+
+    # decompress before verification in case
+    # implementations compress differently
+    msg_data = zlib.decompress(msg_data)
+
+    if not verify_signature(testnet, address, signature, msg_data):
+        raise exceptions.NoBroadcastMessage(tx)  # invalid signature
+
+    return {
+        "address": address,
+        "message": msg_data.decode('utf-8'),
+        "signature": signature
+    }
 
 
 def get_data_blob(tx):

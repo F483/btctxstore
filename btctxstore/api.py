@@ -242,7 +242,10 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
 
     def get_broadcast_message(self, rawtx):
         """TODO add docstring"""
-        pass
+        tx = deserialize.tx(rawtx)
+        result = control.get_broadcast_message(self.testnet, tx)
+        result["signature"] = serialize.signature(result["signature"])
+        return result
 
     ########
     # misc #
