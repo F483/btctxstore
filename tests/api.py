@@ -57,6 +57,13 @@ class TestIO(unittest.TestCase):
         data = self.api.get_hash160data(rawtx, 0)
         self.assertEqual(data, 10 * "f483")
 
+    def test_readwrite_data_blob(self):
+        rawtx = self.api.create_tx()
+        data_in = "f483" * 30 + "beef" * 30
+        rawtx = self.api.add_data_blob(rawtx, data_in)
+        data_out = self.api.get_data_blob(rawtx)
+        self.assertEqual(data_in, data_out)
+
     def test_only_one_nulldata_output(self):
         def callback():
             rawtx = self.api.create_tx()

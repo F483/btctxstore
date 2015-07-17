@@ -62,7 +62,7 @@ def get_data_blob(tx):
     except exceptions.NoNulldataOutput:  # no nulldata output
         raise exceptions.NoDataBlob(tx)
 
-    if len(nulldata < SIZE_PREFIX_BYTES):  # no data size prefix
+    if len(nulldata) < SIZE_PREFIX_BYTES:  # no data size prefix
         raise exceptions.NoDataBlob(tx)
 
     # get size and initial data from nulldata
@@ -98,13 +98,13 @@ def add_data_blob(tx, data, value=548):
 
     # nulldata is sufficient
     if len(data) <= deserialize.MAX_NULLDATA:
-        nulldata_txout = deserialize.nulldatatxout(serialize.data(data))
+        nulldata_txout = deserialize.nulldata_txout(serialize.data(data))
         add_nulldata_output(tx, nulldata_txout)
         return tx
 
     # prefix and initial data stored in nulldata output
     nulldata = data[:deserialize.MAX_NULLDATA]
-    nulldata_txout = deserialize.nulldatatxout(serialize.data(nulldata))
+    nulldata_txout = deserialize.nulldata_txout(serialize.data(nulldata))
     add_nulldata_output(tx, nulldata_txout)
 
     # remaining data stored in hash160data outputs
@@ -125,12 +125,12 @@ def _get_nulldata_output(tx):
     return None, None
 
 
-def add_nulldata_output(tx, nulldatatxout):
+def add_nulldata_output(tx, nulldata_txout):
     index, out = _get_nulldata_output(tx)
     if out is not None:
         raise exceptions.ExistingNulldataOutput()
     # TODO validate transaction is unsigned
-    tx.txs_out.append(nulldatatxout)
+    tx.txs_out.append(nulldata_txout)
     # TODO validate transaction
     return tx
 

@@ -205,18 +205,18 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         data = control.get_data_blob(tx)
         return serialize.data(data)
 
-    def add_data_blob(self, rawtx, hexdata):
+    def add_data_blob(self, rawtx, hexdata, value=DUST_LIMIT):
         """TODO add docstring"""
         tx = deserialize.tx(rawtx)
         data = deserialize.binary(hexdata)
-        tx = control.add_data_blob(tx, data)
+        tx = control.add_data_blob(tx, data, value=value)
         return serialize.tx(tx)
 
     def store_data_blob(self, hexdata, wifs, change_address=None, txouts=None,
-                        fee=10000, lock_time=0):
+                        fee=10000, lock_time=0, value=DUST_LIMIT):
         """TODO add docstring"""
         rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
-        rawtx = self.add_data_blob(rawtx, hexdata)
+        rawtx = self.add_data_blob(rawtx, hexdata, value=value)
         rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
         rawtx = self.sign_tx(rawtx, wifs)
