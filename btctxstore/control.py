@@ -38,6 +38,10 @@ from . import exceptions
 SIZE_PREFIX_BYTES = 2
 
 
+def _chunks(items, size):
+    return [items[i:i+size] for i in range(0, len(items), size)]
+
+
 def _num_to_bytes(bytes_len, v):  # copied from pycoin.encoding.to_bytes_32
     v = from_long(v, 0, 256, lambda x: x)
     if len(v) > bytes_len:
@@ -62,7 +66,7 @@ def get_data_blob(tx):
         raise exceptions.NoDataBlob(tx)
 
     # get size and initial data from nulldata
-    size = _num_to_bytes(SIZE_PREFIX_BYTES, nulldata[:SIZE_PREFIX_BYTES])
+    size = _num_from_bytes(SIZE_PREFIX_BYTES, nulldata[:SIZE_PREFIX_BYTES])
     data = nulldata[SIZE_PREFIX_BYTES:]  # strip size prefix
 
     if size < len(data):  # incorrect size prefix
@@ -83,8 +87,33 @@ def get_data_blob(tx):
     return data[:size]  # trim padding of last hash160output
 
 
-def add_data_blob(tx, data):
-    # TODO
+def add_data_blob(tx, data, value=548):
+
+    max_data_size = 2 ** (SIZE_PREFIX_BYTES * 8)
+    if len(data) > max_data_size:
+        raise exceptions.MaxDataBlobSizeExceeded(max_data_size, len(data))
+
+    size_prefix = _num_to_bytes(SIZE_PREFIX_BYTES, len(data))
+    data = size_prefix + data
+
+    # nulldata is sufficient
+    if len(data) <= deserialize.MAX_NULLDATA:
+        nulldata_txout = deserialize.nulldatatxout(serialize.data(data))
+        add_nulldata_output(tx, nulldata_txout)
+        return tx
+
+    # prefix and initial data stored in nulldata output
+    nulldata = data[:deserialize.MAX_NULLDATA]
+    nulldata_txout = deserialize.nulldatatxout(serialize.data(nulldata))
+    add_nulldata_output(tx, nulldata_txout)
+
+    # remaining data stored in hash160data outputs
+    for hash160data in _chunks(data[deserialize.MAX_NULLDATA:], 20):
+        hexdata = serialize.data(hash160data)
+        if len(hexdata) < 40:  # last entry needs padding
+            hexdata = hexdata + '0' * (40 - len(hexdata))
+        hash160data_txout = deserialize.hash160data_txout(hexdata, value)
+        add_hash160data_output(tx, hash160data_txout)
 
     return tx
 

@@ -13,8 +13,9 @@ class InvalidInput(Exception):
 
 class MaxNulldataExceeded(InvalidInput):
 
-    def __init__(self, bytecount):
-        msg = "Max nulldata exceeded: %sbytes given, max 40bytes!" % bytecount
+    def __init__(self, bytecount, max_nulldata):
+        msg_txt = "Max nulldata exceeded: {0}bytes given, max {1}bytes!"
+        msg = msg_txt.format(bytecount, max_nulldata)
         super(MaxNulldataExceeded, self).__init__(msg)
 
 
@@ -70,3 +71,11 @@ class NoDataBlob(Exception):
     def __init__(self, tx):
         msg = "No data blob stored in tx '%s'!" % tx.as_hex()
         super(NoDataBlob, self).__init__(msg)
+
+
+class MaxDataBlobSizeExceeded(Exception):
+    
+    def __init__(self, max_data_size, data_size):
+        msg_txt = "Max data size exceeded! '{0}' given, limit is '{1}' !"
+        msg = msg_txt.format(max_data_size, data_size)
+        super(MaxDataBlobSizeExceeded, self).__init__(msg)

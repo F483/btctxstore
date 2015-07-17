@@ -24,6 +24,9 @@ from . import exceptions
 # TODO decorator to validates all io is bool, int, str or json serializable
 
 
+MAX_NULLDATA = 40
+
+
 def tx(rawtx):
     return Tx.tx_from_hex(rawtx)
 
@@ -108,8 +111,8 @@ def txouts(testnet, data):
 
 def nulldata_txout(hexdata):
     data = binary(hexdata)
-    if len(data) > 40:
-        raise exceptions.MaxNulldataExceeded(len(data))
+    if len(data) > MAX_NULLDATA:
+        raise exceptions.MaxNulldataExceeded(len(data), MAX_NULLDATA)
     script_text = "OP_RETURN %s" % b2h(data)
     script_bin = tools.compile(script_text)
     return TxOut(0, script_bin)
