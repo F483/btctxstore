@@ -247,6 +247,23 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         result["signature"] = serialize.signature(result["signature"])
         return result
 
+    def store_broadcast_message(self, message, sender_wif, wifs,
+                                change_address=None, txouts=None, fee=10000,
+                                lock_time=0, dust_limit=common.DUST_LIMIT):
+        """TODO add docstring"""
+        rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
+        rawtx = self.add_broadcast_message(rawtx, message, sender_wif,
+                                           dust_limit=dust_limit)
+        rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
+                                fee=fee)
+        rawtx = self.sign_tx(rawtx, wifs)
+        return self.publish(rawtx)
+
+    def retrieve_broadcast_message(self, txid):
+        """TODO add docstring"""
+        rawtx = self.retrieve_tx(txid)
+        return self.get_broadcast_message(rawtx)
+
     ########
     # misc #
     ########

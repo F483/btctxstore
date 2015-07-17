@@ -73,13 +73,13 @@ def get_broadcast_message(testnet, tx):
         raise exceptions.NoBroadcastMessage(tx)
 
     min_data = 65 + 13 + 20 + 0  # signature + padding + hash160 + message
-    if len(data) < min_data:  # not enough data 
+    if len(data) < min_data:  # not enough data
         raise exceptions.NoBroadcastMessage(tx)
 
-    signature = data[:65] # get signature
+    signature = data[:65]  # get signature
     data = data[65:]  # remove signature
     data = data[13:]  # remove padding
-    address = _hash160_to_address(testnet, data[:20]) # get address
+    address = _hash160_to_address(testnet, data[:20])  # get address
     msg_data = data[20:]  # get message data
 
     # decompress before verification in case
