@@ -50,7 +50,7 @@ class TestIO(unittest.TestCase):
         rawtx = self.api.add_nulldata(rawtx, "f483")
         data = self.api.get_nulldata(rawtx)
         self.assertEqual(data, "f483")
-    
+
     def test_readwrite_hash160data(self):
         rawtx = self.api.create_tx()
         rawtx = self.api.add_hash160data(rawtx, 10 * "f483")
@@ -63,6 +63,22 @@ class TestIO(unittest.TestCase):
         rawtx = self.api.add_data_blob(rawtx, data_in)
         data_out = self.api.get_data_blob(rawtx)
         self.assertEqual(data_in, data_out)
+
+    def test_readwrite_broadcast_message(self):
+        message = u"Ünicode test massage"
+        sender_wif = fixtures["wallet"]["wif"]
+        sender_address = fixtures["wallet"]["address"]
+        sender_hash160hex = fixtures["wallet"]["hash160hex"]
+
+        # create broadcast message tx
+        rawtx = self.api.create_tx()
+        rawtx = self.api.add_broadcast_message(rawtx, message, sender_wif)
+
+        # check that sender address is aligned so its visible in history
+        hash160hex = self.api.get_hash160data(rawtx, 3)
+        self.assertEqual(hash160hex, sender_hash160hex)
+
+        # get broadcast message from tx
 
     def test_only_one_nulldata_output(self):
         def callback():

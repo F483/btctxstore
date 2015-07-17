@@ -1,7 +1,8 @@
 {
     "wallet": {
         "wif": "92JATRBTHRGAACcJb41dAGnh7kQ1wev27tcYWcGA2RZeUJLCcZo",
-        "address": "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM"
+        "address": "n3mW3o8XNMyH6xHWBkN98rm7zxxxswzpGM",
+        "hash160hex": "f4131906b10615a61af347c56f1223ddc214f95c"
     },
 
 

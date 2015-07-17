@@ -9,10 +9,8 @@ from . import serialize
 from . import deserialize
 from . import control
 from . import exceptions
+from . import common
 from . insight import InsightService  # XXX rm when added to pycoin
-
-
-DUST_LIMIT = 548  # FIXME move to common
 
 
 class BtcTxStore():  # TODO use apigen when ported to python 3
@@ -129,11 +127,11 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
     # hash160data #
     ###############
 
-    def add_hash160data(self, rawtx, hexdata, value=DUST_LIMIT):
+    def add_hash160data(self, rawtx, hexdata, dust_limit=common.DUST_LIMIT):
         """Writes <hexdata> as new Pay-to-PubkeyHash output to <rawtx>."""
         tx = deserialize.unsignedtx(rawtx)
-        value = deserialize.positive_integer(value)
-        hash160data_txout = deserialize.hash160data_txout(hexdata, value)
+        dust_limit = deserialize.positive_integer(dust_limit)
+        hash160data_txout = deserialize.hash160data_txout(hexdata, dust_limit)
         tx = control.add_hash160data_output(tx, hash160data_txout)
         return serialize.tx(tx)
 
@@ -146,10 +144,10 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
 
     def store_hash160data(self, hexdata, wifs, change_address=None,
                           txouts=None, fee=10000, lock_time=0,
-                          value=DUST_LIMIT):
+                          dust_limit=common.DUST_LIMIT):
         """TODO doc string"""
         rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
-        rawtx = self.add_hash160data(rawtx, hexdata, value=value)
+        rawtx = self.add_hash160data(rawtx, hexdata, dust_limit=dust_limit)
         rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
         rawtx = self.sign_tx(rawtx, wifs)
@@ -205,18 +203,19 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         data = control.get_data_blob(tx)
         return serialize.data(data)
 
-    def add_data_blob(self, rawtx, hexdata, value=DUST_LIMIT):
+    def add_data_blob(self, rawtx, hexdata, dust_limit=common.DUST_LIMIT):
         """TODO add docstring"""
         tx = deserialize.tx(rawtx)
         data = deserialize.binary(hexdata)
-        tx = control.add_data_blob(tx, data, value=value)
+        tx = control.add_data_blob(tx, data, dust_limit=dust_limit)
         return serialize.tx(tx)
 
-    def store_data_blob(self, hexdata, wifs, change_address=None, txouts=None,
-                        fee=10000, lock_time=0, value=DUST_LIMIT):
+    def store_data_blob(self, hexdata, wifs, change_address=None,
+                        txouts=None, fee=10000, lock_time=0,
+                        dust_limit=common.DUST_LIMIT):
         """TODO add docstring"""
         rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
-        rawtx = self.add_data_blob(rawtx, hexdata, value=value)
+        rawtx = self.add_data_blob(rawtx, hexdata, dust_limit=dust_limit)
         rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
         rawtx = self.sign_tx(rawtx, wifs)
@@ -231,10 +230,18 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
     # broadcast message #
     #####################
 
-    def add_broadcast_message(self, message, sender_wif):
-        pass
+    def add_broadcast_message(self, rawtx, message, sender_wif,
+                              dust_limit=common.DUST_LIMIT):
+        """TODO add docstring"""
+        tx = deserialize.tx(rawtx)
+        message = deserialize.unicode_str(message)
+        sender_key = deserialize.key(self.testnet, sender_wif)
+        tx = control.add_broadcast_message(self.testnet, tx, message,
+                                           sender_key, dust_limit=dust_limit)
+        return serialize.tx(tx)
 
     def get_broadcast_message(self, rawtx):
+        """TODO add docstring"""
         pass
 
     ########

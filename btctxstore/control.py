@@ -13,15 +13,14 @@ import hashlib
 import struct
 import ecdsa
 import math
+import zlib
 from ecdsa.curves import SECP256k1
 from pycoin.serialize.bitcoin_streamer import stream_bc_int
 from pycoin.tx.Tx import Tx
 from pycoin.encoding import hash160_sec_to_bitcoin_address
+from pycoin.encoding import bitcoin_address_to_hash160_sec
 from pycoin.encoding import public_pair_to_hash160_sec
 from pycoin.encoding import double_sha256
-from pycoin.encoding import from_long
-from pycoin.encoding import to_long
-from pycoin.encoding import byte_to_int
 from pycoin.tx.script import tools
 from pycoin.serialize import h2b
 from pycoin.tx.pay_to import build_hash160_lookup
@@ -33,26 +32,38 @@ from . import modsqrt
 from . import deserialize
 from . import serialize
 from . import exceptions
+from . import common
 
 
 SIZE_PREFIX_BYTES = 2
 
 
-def _chunks(items, size):
-    return [items[i:i+size] for i in range(0, len(items), size)]
+def _address_to_hash160(testnet, address):
+    prefix = b'\x6f' if testnet else b"\0"
+    return bitcoin_address_to_hash160_sec(address, address_prefix=prefix)
 
 
-def _num_to_bytes(bytes_len, v):  # copied from pycoin.encoding.to_bytes_32
-    v = from_long(v, 0, 256, lambda x: x)
-    if len(v) > bytes_len:
-        raise ValueError("input to _num_to_bytes is too large")
-    return ((b'\0' * bytes_len) + v)[-bytes_len:]
+def _hash160_to_address(testnet, hash160):
+    prefix = b'\x6f' if testnet else b"\0"
+    return hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
 
 
-def _num_from_bytes(bytes_len, v):  # copied from pycoin.encoding.to_bytes_32
-    if len(v) != bytes_len:
-        raise ValueError("input to _num_from_bytes is wrong length")
-    return to_long(256, byte_to_int, v)[0]
+def add_broadcast_message(testnet, tx, message, sender_key,
+                          dust_limit=common.DUST_LIMIT):
+    msg_data = zlib.compress(message.encode('utf-8'))
+    signature = sign_data(testnet, msg_data, sender_key)
+    hash160 = _address_to_hash160(testnet, sender_key.address())
+
+    data = signature    # 65 byte message signature
+    data += 13 * b'\0'  # 13 byte padding so sender hash160 aligns with txout
+    data += hash160     # 20 byte aligned sender address (tx in history)
+    data += msg_data    # the actual message data
+
+    return add_data_blob(tx, data, dust_limit=dust_limit)
+
+
+def get_broadcast_message(testnet, tx):
+    pass
 
 
 def get_data_blob(tx):
@@ -66,7 +77,8 @@ def get_data_blob(tx):
         raise exceptions.NoDataBlob(tx)
 
     # get size and initial data from nulldata
-    size = _num_from_bytes(SIZE_PREFIX_BYTES, nulldata[:SIZE_PREFIX_BYTES])
+    size = common.num_from_bytes(SIZE_PREFIX_BYTES,
+                                 nulldata[:SIZE_PREFIX_BYTES])
     data = nulldata[SIZE_PREFIX_BYTES:]  # strip size prefix
 
     if size < len(data):  # incorrect size prefix
@@ -87,32 +99,32 @@ def get_data_blob(tx):
     return data[:size]  # trim padding of last hash160output
 
 
-def add_data_blob(tx, data, value=548):
+def add_data_blob(tx, data, dust_limit=common.DUST_LIMIT):
 
     max_data_size = 2 ** (SIZE_PREFIX_BYTES * 8)
     if len(data) > max_data_size:
         raise exceptions.MaxDataBlobSizeExceeded(max_data_size, len(data))
 
-    size_prefix = _num_to_bytes(SIZE_PREFIX_BYTES, len(data))
+    size_prefix = common.num_to_bytes(SIZE_PREFIX_BYTES, len(data))
     data = size_prefix + data
 
     # nulldata is sufficient
-    if len(data) <= deserialize.MAX_NULLDATA:
+    if len(data) <= common.MAX_NULLDATA:
         nulldata_txout = deserialize.nulldata_txout(serialize.data(data))
         add_nulldata_output(tx, nulldata_txout)
         return tx
 
     # prefix and initial data stored in nulldata output
-    nulldata = data[:deserialize.MAX_NULLDATA]
+    nulldata = data[:common.MAX_NULLDATA]
     nulldata_txout = deserialize.nulldata_txout(serialize.data(nulldata))
     add_nulldata_output(tx, nulldata_txout)
 
     # remaining data stored in hash160data outputs
-    for hash160data in _chunks(data[deserialize.MAX_NULLDATA:], 20):
+    for hash160data in common.chunks(data[common.MAX_NULLDATA:], 20):
         hexdata = serialize.data(hash160data)
         if len(hexdata) < 40:  # last entry needs padding
             hexdata = hexdata + '0' * (40 - len(hexdata))
-        hash160data_txout = deserialize.hash160data_txout(hexdata, value)
+        hash160data_txout = deserialize.hash160data_txout(hexdata, dust_limit)
         add_hash160data_output(tx, hash160data_txout)
 
     return tx
@@ -195,10 +207,9 @@ def find_txins(service, addresses, amount):
     return txins, total
 
 
-def public_pair_to_address(testnet, public_pair, compressed):
-    prefix = b'\x6f' if testnet else b"\0"
+def _public_pair_to_address(testnet, public_pair, compressed):
     hash160 = public_pair_to_hash160_sec(public_pair, compressed=compressed)
-    return hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
+    return _hash160_to_address(testnet, hash160)
 
 
 def create_key(testnet):
@@ -312,8 +323,8 @@ def verify_signature(testnet, address, sig, data):
 
         # validate that recovered address is correct
         public_pair = [Q.x(), Q.y()]
-        recoveredaddress = public_pair_to_address(testnet, public_pair,
-                                                  compressed)
+        recoveredaddress = _public_pair_to_address(testnet, public_pair,
+                                                   compressed)
         return address == recoveredaddress
 
     except AssertionError:  # _recover_public_key failed

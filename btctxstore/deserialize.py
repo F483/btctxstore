@@ -19,12 +19,16 @@ from pycoin.tx.TxIn import TxIn
 from pycoin.key import validate
 
 from . import exceptions
+from . import common
 
 
 # TODO decorator to validates all io is bool, int, str or json serializable
 
 
-MAX_NULLDATA = 40
+def unicode_str(string):
+    if type(string) != type(u"unicode"):
+        raise exceptions.InvalidInput("String must be a unicode string!")
+    return string
 
 
 def tx(rawtx):
@@ -42,7 +46,7 @@ def unsignedtx(rawtx):
 
 
 def binary(hexdata):
-    if type(hexdata) == type(b"bytes"):
+    if isinstance(hexdata, bytes):
         hexdata = hexdata.decode("ascii")
     return h2b(hexdata)
 
@@ -111,20 +115,20 @@ def txouts(testnet, data):
 
 def nulldata_txout(hexdata):
     data = binary(hexdata)
-    if len(data) > MAX_NULLDATA:
-        raise exceptions.MaxNulldataExceeded(len(data), MAX_NULLDATA)
+    if len(data) > common.MAX_NULLDATA:
+        raise exceptions.MaxNulldataExceeded(len(data), common.MAX_NULLDATA)
     script_text = "OP_RETURN %s" % b2h(data)
     script_bin = tools.compile(script_text)
     return TxOut(0, script_bin)
 
 
-def hash160data_txout(hexdata, value=548):  # FIXME get dust from common
+def hash160data_txout(hexdata, dust_limit=common.DUST_LIMIT):
     data = binary(hexdata)
     if len(data) != 20:  # 160 bit
         raise exceptions.InvalidHash160DataSize(len(data))
     script_text = "OP_DUP OP_HASH160 %s OP_EQUALVERIFY OP_CHECKSIG" % b2h(data)
     script_bin = tools.compile(script_text)
-    return TxOut(value, script_bin)
+    return TxOut(dust_limit, script_bin)
 
 
 def secret_exponents(testnet, wifs):
