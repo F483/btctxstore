@@ -12,12 +12,16 @@ import six
 import hashlib
 import struct
 import ecdsa
+import math
 from ecdsa.curves import SECP256k1
 from pycoin.serialize.bitcoin_streamer import stream_bc_int
 from pycoin.tx.Tx import Tx
 from pycoin.encoding import hash160_sec_to_bitcoin_address
 from pycoin.encoding import public_pair_to_hash160_sec
 from pycoin.encoding import double_sha256
+from pycoin.encoding import from_long
+from pycoin.encoding import to_long
+from pycoin.encoding import byte_to_int
 from pycoin.tx.script import tools
 from pycoin.serialize import h2b
 from pycoin.tx.pay_to import build_hash160_lookup
@@ -31,15 +35,70 @@ from . import serialize
 from . import exceptions
 
 
-def get_nulldata_output(tx):
-    for out in tx.txs_out:
+SIZE_PREFIX_BYTES = 2
+
+
+def _num_to_bytes(bytes_len, v):  # copied from pycoin.encoding.to_bytes_32
+    v = from_long(v, 0, 256, lambda x: x)
+    if len(v) > bytes_len:
+        raise ValueError("input to _num_to_bytes is too large")
+    return ((b'\0' * bytes_len) + v)[-bytes_len:]
+
+
+def _num_from_bytes(bytes_len, v):  # copied from pycoin.encoding.to_bytes_32
+    if len(v) != bytes_len:
+        raise ValueError("input to _num_from_bytes is wrong length")
+    return to_long(256, byte_to_int, v)[0]
+
+
+def get_data_blob(tx):
+    # blob size and initial data stored in nulldata
+    try:
+        nulldata_index, nulldata = get_nulldata(tx)
+    except exceptions.NoNulldataOutput:  # no nulldata output
+        raise exceptions.NoDataBlob(tx)
+
+    if len(nulldata < SIZE_PREFIX_BYTES):  # no data size prefix
+        raise exceptions.NoDataBlob(tx)
+
+    # get size and initial data from nulldata
+    size = _num_to_bytes(SIZE_PREFIX_BYTES, nulldata[:SIZE_PREFIX_BYTES])
+    data = nulldata[SIZE_PREFIX_BYTES:]  # strip size prefix
+
+    if size < len(data):  # incorrect size prefix
+        raise exceptions.NoDataBlob(tx)
+
+    if size == len(data):  # nulldata was sufficient
+        return data
+
+    required_bytes = (size - len(data))
+    required_hash160_outputs = int(math.ceil(required_bytes / 20.0))
+    if (required_hash160_outputs + nulldata_index + 1) > len(tx.txs_out):
+        raise exceptions.NoDataBlob(tx)  # not enough hash160 outputs for data
+
+    for index in range(required_hash160_outputs):
+        hash160_index = index + nulldata_index + 1
+        data += get_hash160_data(tx, hash160_index)
+
+    return data[:size]  # trim padding of last hash160output
+
+
+def add_data_blob(tx, data):
+    # TODO
+
+    return tx
+
+
+def _get_nulldata_output(tx):
+    for index, out in enumerate(tx.txs_out):
         if re.match("^OP_RETURN", tools.disassemble(out.script)):
-            return out
-    return None
+            return index, out
+    return None, None
 
 
 def add_nulldata_output(tx, nulldatatxout):
-    if get_nulldata_output(tx):
+    index, out = _get_nulldata_output(tx)
+    if out is not None:
         raise exceptions.ExistingNulldataOutput()
     # TODO validate transaction is unsigned
     tx.txs_out.append(nulldatatxout)
@@ -60,10 +119,11 @@ def get_hash160_data(tx, output_index):
 
 
 def get_nulldata(tx):
-    out = get_nulldata_output(tx)
+    index, out = _get_nulldata_output(tx)
     if not out:
         raise exceptions.NoNulldataOutput(tx)
-    return h2b(tools.disassemble(out.script)[10:])
+    data = h2b(tools.disassemble(out.script)[10:])
+    return index, data
 
 
 def create_tx(service, testnet, txins, txouts,

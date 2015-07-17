@@ -63,3 +63,10 @@ class NoNulldataOutput(Exception):
     def __init__(self, tx):
         msg = "No nulldata output for tx '%s'!" % tx.as_hex()
         super(NoNulldataOutput, self).__init__(msg)
+
+
+class NoDataBlob(Exception):
+    
+    def __init__(self, tx):
+        msg = "No data blob stored in tx '%s'!" % tx.as_hex()
+        super(NoDataBlob, self).__init__(msg)

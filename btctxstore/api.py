@@ -26,9 +26,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    ###################
-    # wif and address #
-    ###################
+    #####################
+    # wif and addresses #
+    #####################
 
     def create_key(self):
         """Create new private key and return in wif format."""
@@ -174,7 +174,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
     def get_nulldata(self, rawtx):
         """Returns nulldata from <rawtx> as hexdata."""
         tx = deserialize.tx(rawtx)
-        data = control.get_nulldata(tx)
+        index, data = control.get_nulldata(tx)
         return serialize.data(data)
 
     def store_nulldata(self, hexdata, wifs, change_address=None, txouts=None,
@@ -194,6 +194,48 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         """Returns nulldata stored in blockchain <txid> as hexdata."""
         rawtx = self.retrieve_tx(txid)
         return self.get_nulldata(rawtx)
+
+    #############
+    # data blob #
+    #############
+
+    def get_data_blob(self, rawtx):
+        """TODO add docstring"""
+        tx = deserialize.tx(rawtx)
+        data = control.get_data_blob(tx)
+        return serialize.data(data)
+
+    def add_data_blob(self, rawtx, hexdata):
+        """TODO add docstring"""
+        tx = deserialize.tx(rawtx)
+        data = deserialize.binary(hexdata)
+        tx = control.add_data_blob(tx, data)
+        return serialize.tx(tx)
+
+    def store_data_blob(self, hexdata, wifs, change_address=None, txouts=None,
+                        fee=10000, lock_time=0):
+        """TODO add docstring"""
+        rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
+        rawtx = self.add_data_blob(rawtx, hexdata)
+        rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
+                                fee=fee)
+        rawtx = self.sign_tx(rawtx, wifs)
+        return self.publish(rawtx)
+
+    def retrieve_data_blob(self, txid):
+        """TODO add docstring"""
+        rawtx = self.retrieve_tx(txid)
+        return self.get_data_blob(rawtx)
+
+    #####################
+    # broadcast message #
+    #####################
+
+    def add_broadcast_message(self, message, sender_wif):
+        pass
+
+    def get_broadcast_message(self, rawtx):
+        pass
 
     ########
     # misc #
