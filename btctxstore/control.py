@@ -14,6 +14,7 @@ import struct
 import ecdsa
 import math
 import zlib
+import binascii
 from ecdsa.curves import SECP256k1
 from pycoin.serialize.bitcoin_streamer import stream_bc_int
 from pycoin.tx.Tx import Tx
@@ -37,6 +38,9 @@ from . import common
 
 SIZE_PREFIX_BYTES = 2
 
+# 6 byte data type keys to reduce chance of collision with random data
+BROADCAST_MESSAGE_KEY_VERSON_01 = 'b220185f49e7'
+
 
 def _address_to_hash160(testnet, address):
     prefix = b'\x6f' if testnet else b"\0"
@@ -57,10 +61,11 @@ def add_broadcast_message(testnet, tx, message, sender_key,
     # compress after signing in case implementations compress differently
     msg_data = zlib.compress(msg_data, 9)
 
-    data = signature    # 65 byte message signature
-    data += 13 * b'\0'  # 13 byte padding so sender hash160 aligns with txout
-    data += hash160     # 20 byte aligned sender address (tx in history)
-    data += msg_data    # the actual message data
+    data = binascii.unhexlify(BROADCAST_MESSAGE_KEY_VERSON_01)
+    data += signature  # 65 byte message signature
+    data += 7 * b'\0'  # 7 byte padding so sender hash160 aligns with txout
+    data += hash160    # 20 byte aligned sender address (tx in history)
+    data += msg_data   # the actual message data
 
     return add_data_blob(tx, data, dust_limit=dust_limit)
 
@@ -72,19 +77,28 @@ def get_broadcast_message(testnet, tx):
     except exceptions.NoDataBlob:
         raise exceptions.NoBroadcastMessage(tx)
 
-    min_data = 65 + 13 + 20 + 0  # signature + padding + hash160 + message
+    min_data = 6 + 65 + 7 + 20 + 0  # key + sig + padding + hash160 + message
     if len(data) < min_data:  # not enough data
         raise exceptions.NoBroadcastMessage(tx)
 
+    # parse data
+    msg_key = data[:6]  # get key
+    data = data[6:]  # remove key
     signature = data[:65]  # get signature
     data = data[65:]  # remove signature
-    data = data[13:]  # remove padding
+    data = data[7:]  # remove padding
     address = _hash160_to_address(testnet, data[:20])  # get address
     msg_data = data[20:]  # get message data
 
+    if msg_key != binascii.unhexlify(BROADCAST_MESSAGE_KEY_VERSON_01):
+        raise exceptions.NoBroadcastMessage(tx)
+
     # decompress before verification in case
     # implementations compress differently
-    msg_data = zlib.decompress(msg_data)
+    try:
+        msg_data = zlib.decompress(msg_data)
+    except zlib.error:
+        raise exceptions.NoBroadcastMessage(tx)
 
     if not verify_signature(testnet, address, signature, msg_data):
         raise exceptions.NoBroadcastMessage(tx)  # invalid signature

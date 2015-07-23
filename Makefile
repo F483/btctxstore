@@ -24,6 +24,10 @@ devsetup: clean
 	@virtualenv -p /usr/bin/python3 env/py3
 	@env/py2/bin/python setup.py develop
 	@env/py3/bin/python setup.py develop
+	@env/py2/bin/pip install ipython
+	@env/py3/bin/pip install ipython
+	@env/py2/bin/pip install pudb
+	@env/py3/bin/pip install pudb
 
 
 test:
