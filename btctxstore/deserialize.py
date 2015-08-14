@@ -33,8 +33,10 @@ def unicode_str(string):
 
 
 def string(s):
-    if type(s) != type("string"):
+    if type(s) not in [type("string"), type(u"unicode")]:
         raise exceptions.InvalidInput("Must be a string!")
+    if type(s) != type("string"):  # python 2 unicode strings ...
+        return s.encode('utf-8')
     return s
 
 

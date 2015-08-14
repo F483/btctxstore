@@ -332,6 +332,10 @@ class TestValidateAddressTestnet(unittest.TestCase):
         self.testnet_api = BtcTxStore(dryrun=True, testnet=True)
         self.mainnet_api = BtcTxStore(dryrun=True, testnet=False)
 
+    def test_valid_string(self):
+        address = 'migiScBNvVKYwEiCFhgBNGtZ87cdygtuSQ'
+        self.assertTrue(self.testnet_api.validate_address(address))
+
     def test_valid_network(self):
         address = self.testnet_api.get_address(self.testnet_api.create_key())
         self.assertTrue(self.testnet_api.validate_address(address))
@@ -352,6 +356,10 @@ class TestValidateAddressMainnet(unittest.TestCase):
     def setUp(self):
         self.testnet_api = BtcTxStore(dryrun=True, testnet=True)
         self.mainnet_api = BtcTxStore(dryrun=True, testnet=False)
+
+    def test_valid_string(self):
+        address = '191GVvAaTRxLmz3rW3nU5jAV1rF186VxQc'
+        self.assertTrue(self.mainnet_api.validate_address(address))
 
     def test_valid_network(self):
         address = self.mainnet_api.get_address(self.mainnet_api.create_key())
