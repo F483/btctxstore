@@ -37,7 +37,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         try:
             deserialize.address(self.testnet, address)
             return True
-        except exceptions.InvalidAddress:
+        except exceptions.InvalidInput:
             return False
 
     def get_address(self, wif):
@@ -48,7 +48,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         try:
             deserialize.key(self.testnet, wif)
             return True
-        except exceptions.InvalidWif:
+        except exceptions.InvalidInput:
             return False
 
     ###############

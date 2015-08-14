@@ -67,6 +67,26 @@ class TestKey(unittest.TestCase):
             deserialize.key(True, mainnet_wif)
         self.assertRaises(exceptions.InvalidWif, callback)
 
+        # testnet non string
+        def callback():
+            deserialize.key(False, None)
+        self.assertRaises(exceptions.InvalidInput, callback)
+
+        # mainnet non string
+        def callback():
+            deserialize.key(True, None)
+        self.assertRaises(exceptions.InvalidInput, callback)
+
+        # testnet garbage string
+        def callback():
+            deserialize.key(False, "garbage")
+        self.assertRaises(exceptions.InvalidWif, callback)
+
+        # mainnet garbage string
+        def callback():
+            deserialize.key(True, "garbage")
+        self.assertRaises(exceptions.InvalidWif, callback)
+
 
 class TestAddress(unittest.TestCase):
 
@@ -90,4 +110,24 @@ class TestAddress(unittest.TestCase):
         # mainnet negative
         def callback():
             deserialize.address(True, mainnet_address)
+        self.assertRaises(exceptions.InvalidAddress, callback)
+
+        # non string testnet
+        def callback():
+            deserialize.address(False, None)
+        self.assertRaises(exceptions.InvalidInput, callback)
+
+        # non string mainnet
+        def callback():
+            deserialize.address(True, None)
+        self.assertRaises(exceptions.InvalidInput, callback)
+
+        # garbage string testnet
+        def callback():
+            deserialize.address(False, "garbage")
+        self.assertRaises(exceptions.InvalidAddress, callback)
+
+        # garbage string mainnet
+        def callback():
+            deserialize.address(True, "garbage")
         self.assertRaises(exceptions.InvalidAddress, callback)

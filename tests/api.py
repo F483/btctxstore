@@ -343,6 +343,9 @@ class TestValidateAddressTestnet(unittest.TestCase):
     def test_invalid_data(self):
         self.assertFalse(self.testnet_api.validate_address("f483"))
 
+    def test_invalid_type(self):
+        self.assertFalse(self.testnet_api.validate_address(None))
+
 
 class TestValidateAddressMainnet(unittest.TestCase):
 
@@ -360,6 +363,9 @@ class TestValidateAddressMainnet(unittest.TestCase):
 
     def test_invalid_data(self):
         self.assertFalse(self.mainnet_api.validate_address("f483"))
+
+    def test_invalid_type(self):
+        self.assertFalse(self.mainnet_api.validate_address(None))
 
 
 class TestValidateKeyTestnet(unittest.TestCase):
@@ -379,6 +385,9 @@ class TestValidateKeyTestnet(unittest.TestCase):
     def test_invalid_data(self):
         self.assertFalse(self.testnet_api.validate_key("f483"))
 
+    def test_invalid_type(self):
+        self.assertFalse(self.testnet_api.validate_key(None))
+
 
 class TestValidateKeyMainnet(unittest.TestCase):
 
@@ -396,6 +405,9 @@ class TestValidateKeyMainnet(unittest.TestCase):
 
     def test_invalid_data(self):
         self.assertFalse(self.mainnet_api.validate_key("f483"))
+
+    def test_invalid_type(self):
+        self.assertFalse(self.mainnet_api.validate_key(None))
 
 
 if __name__ == '__main__':
