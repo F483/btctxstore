@@ -33,7 +33,7 @@ setup(
     install_requires=[
         'pycoin == 0.52',
         'six == 1.9.0',
-        'ecdsa'
+        'ecdsa'  # FIXME exact version
     ],
     tests_require=[
         'coverage',
