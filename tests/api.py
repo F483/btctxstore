@@ -22,13 +22,16 @@ class TestAddInputs(unittest.TestCase):
     def setUp(self):
         self.api = BtcTxStore(dryrun=True, testnet=True)
 
+    # TODO test signing
+
     def test_add_inputs_withchange(self):
         txouts = fixtures["add_inputs"]["withchange"]["txouts"]
         wifs = fixtures["add_inputs"]["withchange"]["wifs"]
         change_address = fixtures["add_inputs"]["withchange"]["change_address"]
         expected = fixtures["add_inputs"]["withchange"]["expected"]
         rawtx = self.api.create_tx(txouts=txouts)
-        result = self.api.add_inputs(rawtx, wifs, change_address)
+        result = self.api.add_inputs(rawtx, wifs, change_address,
+                                     dont_sign=True)
         self.assertEqual(expected, result)
 
     def test_add_inputs_nochange(self):
@@ -36,7 +39,7 @@ class TestAddInputs(unittest.TestCase):
         wifs = fixtures["add_inputs"]["nochange"]["wifs"]
         expected = fixtures["add_inputs"]["nochange"]["expected"]
         rawtx = self.api.create_tx(txouts=txouts)
-        result = self.api.add_inputs(rawtx, wifs)
+        result = self.api.add_inputs(rawtx, wifs, dont_sign=True)
         self.assertEqual(expected, result)
 
 

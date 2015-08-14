@@ -33,9 +33,15 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         bip32node = control.create_key(self.testnet)
         return bip32node.wif()
 
+    def validate_address(self, address):
+        pass  # TODO implement
+
     def get_address(self, wif):
         """Return bitcoin address for given wallet. """
         return deserialize.key(self.testnet, wif).address()
+
+    def validate_key(self, wif):
+        pass  # TODO implement
 
     ###############
     # transaction #
@@ -55,7 +61,16 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
                                lock_time=lock_time)
         return serialize.tx(tx)
 
-    def add_inputs(self, rawtx, wifs, change_address=None, fee=10000):
+    def send(self, wifs, txouts, change_address=None, lock_time=0, fee=10000):
+        """TODO add doc string"""
+        # FIXME test!!
+        rawtx = self.create_tx(txouts=txouts, lock_time=lock_time)
+        rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
+                                fee=fee)
+        return self.publish(rawtx)
+
+    def add_inputs(self, rawtx, wifs, change_address=None, fee=10000,
+                   dont_sign=False):
         """Add sufficient inputs from given <wifs> to cover <rawtx> outputs
         and <fee>. If no <change_address> is given, change will be sent to
         first wif.
@@ -67,6 +82,10 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
             change_address = deserialize.address(self.testnet, change_address)
         tx = control.add_inputs(self.service, self.testnet, tx, keys,
                                 change_address=change_address, fee=fee)
+
+        if not dont_sign:
+            tx = control.sign_tx(self.service, self.testnet, tx, keys)
+
         return serialize.tx(tx)
 
     def sign_tx(self, rawtx, wifs):
@@ -150,7 +169,6 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         rawtx = self.add_hash160data(rawtx, hexdata, dust_limit=dust_limit)
         rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
-        rawtx = self.sign_tx(rawtx, wifs)
         return self.publish(rawtx)
 
     def retrieve_hash160data(self, txid, output_index):
@@ -185,7 +203,6 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         rawtx = self.add_nulldata(rawtx, hexdata)
         rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
-        rawtx = self.sign_tx(rawtx, wifs)
         return self.publish(rawtx)
 
     def retrieve_nulldata(self, txid):
@@ -218,7 +235,6 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         rawtx = self.add_data_blob(rawtx, hexdata, dust_limit=dust_limit)
         rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
-        rawtx = self.sign_tx(rawtx, wifs)
         return self.publish(rawtx)
 
     def retrieve_data_blob(self, txid):
@@ -256,7 +272,6 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
                                            dust_limit=dust_limit)
         rawtx = self.add_inputs(rawtx, wifs, change_address=change_address,
                                 fee=fee)
-        rawtx = self.sign_tx(rawtx, wifs)
         return self.publish(rawtx)
 
     def retrieve_broadcast_message(self, txid):

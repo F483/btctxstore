@@ -30,13 +30,13 @@ devsetup: clean
 	@env/py3/bin/pip install pudb
 
 
-test:
+test: devsetup
 	env/py2/bin/python setup.py test
 	env/py3/bin/python setup.py test
-	# import pudb; pu.db # set break point
 
 
 publish: test
 	env/py3/bin/python setup.py register sdist upload
 
 
+# import pudb; pu.db # set break point
