@@ -22,7 +22,8 @@ from . import exceptions
 from . import common
 
 
-# TODO decorator to validates all io is bool, int, str or json serializable
+# TODO decorator to validate all io json serializable
+# TODO use apigen when it supports python3
 
 
 def unicode_str(string):
@@ -139,7 +140,7 @@ def secret_exponents(testnet, wifs):
 def key(testnet, wif):
     netcode = 'XTN' if testnet else 'BTC'
     if not validate.is_wif_valid(wif, allowable_netcodes=[netcode]):
-        raise exceptions.InvalidWif(address)
+        raise exceptions.InvalidWif(wif)
     return Key.from_text(wif)
 
 

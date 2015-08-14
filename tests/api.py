@@ -326,5 +326,77 @@ class TestSplitUtxos(unittest.TestCase):
         self.assertEqual(len(txids), 6)
 
 
+class TestValidateAddressTestnet(unittest.TestCase):
+
+    def setUp(self):
+        self.testnet_api = BtcTxStore(dryrun=True, testnet=True)
+        self.mainnet_api = BtcTxStore(dryrun=True, testnet=False)
+
+    def test_valid_network(self):
+        address = self.testnet_api.get_address(self.testnet_api.create_key())
+        self.assertTrue(self.testnet_api.validate_address(address))
+
+    def test_invalid_network(self):
+        address = self.mainnet_api.get_address(self.mainnet_api.create_key())
+        self.assertFalse(self.testnet_api.validate_address(address))
+
+    def test_invalid_data(self):
+        self.assertFalse(self.testnet_api.validate_address("f483"))
+
+
+class TestValidateAddressMainnet(unittest.TestCase):
+
+    def setUp(self):
+        self.testnet_api = BtcTxStore(dryrun=True, testnet=True)
+        self.mainnet_api = BtcTxStore(dryrun=True, testnet=False)
+
+    def test_valid_network(self):
+        address = self.mainnet_api.get_address(self.mainnet_api.create_key())
+        self.assertTrue(self.mainnet_api.validate_address(address))
+
+    def test_invalid_network(self):
+        address = self.testnet_api.get_address(self.testnet_api.create_key())
+        self.assertFalse(self.mainnet_api.validate_address(address))
+
+    def test_invalid_data(self):
+        self.assertFalse(self.mainnet_api.validate_address("f483"))
+
+
+class TestValidateKeyTestnet(unittest.TestCase):
+
+    def setUp(self):
+        self.testnet_api = BtcTxStore(dryrun=True, testnet=True)
+        self.mainnet_api = BtcTxStore(dryrun=True, testnet=False)
+
+    def test_valid_network(self):
+        key = self.testnet_api.create_key()
+        self.assertTrue(self.testnet_api.validate_key(key))
+
+    def test_invalid_network(self):
+        key = self.mainnet_api.create_key()
+        self.assertFalse(self.testnet_api.validate_key(key))
+
+    def test_invalid_data(self):
+        self.assertFalse(self.testnet_api.validate_key("f483"))
+
+
+class TestValidateKeyMainnet(unittest.TestCase):
+
+    def setUp(self):
+        self.testnet_api = BtcTxStore(dryrun=True, testnet=True)
+        self.mainnet_api = BtcTxStore(dryrun=True, testnet=False)
+
+    def test_valid_network(self):
+        key = self.mainnet_api.create_key()
+        self.assertTrue(self.mainnet_api.validate_key(key))
+
+    def test_invalid_network(self):
+        key = self.testnet_api.create_key()
+        self.assertFalse(self.mainnet_api.validate_key(key))
+
+    def test_invalid_data(self):
+        self.assertFalse(self.mainnet_api.validate_key("f483"))
+
+
 if __name__ == '__main__':
     unittest.main()

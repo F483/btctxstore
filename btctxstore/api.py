@@ -33,15 +33,23 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         bip32node = control.create_key(self.testnet)
         return bip32node.wif()
 
-    def validate_address(self, address):
-        pass  # TODO implement
+    def validate_address(self, address):  # TODO test
+        try:
+            deserialize.address(self.testnet, address)
+            return True
+        except exceptions.InvalidAddress:
+            return False
 
     def get_address(self, wif):
         """Return bitcoin address for given wallet. """
         return deserialize.key(self.testnet, wif).address()
 
-    def validate_key(self, wif):
-        pass  # TODO implement
+    def validate_key(self, wif):  # TODO test
+        try:
+            deserialize.key(self.testnet, wif)
+            return True
+        except exceptions.InvalidWif:
+            return False
 
     ###############
     # transaction #
