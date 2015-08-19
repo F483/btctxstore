@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
+import binascii
 from . import serialize
 from . import deserialize
 from . import control
@@ -149,6 +150,16 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
                                             signature, data)
         except exceptions.InvalidAddress:
             return False
+
+    def sign_unicode(self, wif, message):
+        """Signing <unicode> with <wif> private key."""
+        hexdata = binascii.hexlify(message.encode("utf-8"))
+        return self.sign_data(wif, hexdata)
+
+    def verify_signature_unicode(self, address, signature, message):
+        """Verify <signature> of <unicode> by <address>."""
+        hexdata = binascii.hexlify(message.encode("utf-8"))
+        return self.verify_signature(address, signature, hexdata)
 
     ###############
     # hash160data #

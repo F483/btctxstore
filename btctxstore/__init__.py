@@ -5,4 +5,4 @@
 
 from btctxstore.api import BtcTxStore
 
-
+from .version import __version__  # NOQA

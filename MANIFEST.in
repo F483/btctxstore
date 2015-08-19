@@ -1,2 +1,1 @@
-include version.txt
 include tests/fixtures.json

@@ -12,14 +12,14 @@ THISDIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(THISDIR)
 
 
-VERSION = open("version.txt").readline().strip()
+exec(open('btctxstore/version.py').read())  # load __version__
 DOWNLOAD_BASEURL = "https://pypi.python.org/packages/source/a/btctxstore/"
-DOWNLOAD_URL = DOWNLOAD_BASEURL + "btctxstore-%s.tar.gz" % VERSION
+DOWNLOAD_URL = DOWNLOAD_BASEURL + "btctxstore-%s.tar.gz" % __version__  # NOQA
 
 
 setup(
     name='btctxstore',
-    version=VERSION,
+    version=__version__,  # NOQA
     description=('Library to read/write data to bitcoin transaction outputs.'),
     long_description=open("README.rst").read(),
     keywords=("Bitcoin, OP_RETURN, store, tx, transaction"),
@@ -30,17 +30,8 @@ setup(
     packages=find_packages(),
     download_url = DOWNLOAD_URL,
     test_suite="tests",
-    install_requires=[
-        'pycoin == 0.52',
-        'six == 1.9.0',
-        'ecdsa'  # FIXME exact version
-    ],
-    tests_require=[
-        'coverage',
-        'coveralls',
-        'ipython',
-        'pudb'  # import pudb; pu.db # set break point
-    ],
+    install_requires=open("requirements.txt").readlines(),
+    tests_require=[],  # use `pip install -r test_requirements.txt`
     zip_safe=False,
     classifiers=[
         # "Development Status :: 1 - Planning",

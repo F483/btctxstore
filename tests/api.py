@@ -308,6 +308,28 @@ class TestSignData(unittest.TestCase):
         self.assertEqual(valid, True)
 
 
+class TestSignUnicode(unittest.TestCase):
+
+    def setUp(self):
+        self.api = BtcTxStore(dryrun=True, testnet=True)
+
+    def test_sign_a(self):
+        wif = fixtures["wallet"]["wif"]
+        message = u"üöä"
+        address = self.api.get_address(wif)
+        sig = self.api.sign_unicode(wif, message)
+        valid = self.api.verify_signature_unicode(address, sig, message)
+        self.assertEqual(valid, True)
+
+    def test_sign_b(self):
+        wif = "cSuT2J14dYbe1zvB5z5WTXeRcMbj4tnoKssAK1ZQbnX5HtHfW3bi"
+        message = u"üöä"
+        address = self.api.get_address(wif)
+        sig = self.api.sign_unicode(wif, message)
+        valid = self.api.verify_signature_unicode(address, sig, message)
+        self.assertEqual(valid, True)
+
+
 class TestSplitUtxos(unittest.TestCase):
 
     def setUp(self):
