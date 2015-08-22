@@ -35,8 +35,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         @param: master_secret Create from master secret, otherwise random.
         """
         master_secret = deserialize.bytes_str(master_secret)
-        bip32node = control.create_wallet(self.testnet)
-        return bip32node.hwif()
+        bip32node = control.create_wallet(self.testnet,
+                                          master_secret=master_secret)
+        return bip32node.hwif(as_private=True)
 
     def create_key(self, master_secret=b""):
         """Create new private key and return in wif format.
@@ -44,7 +45,8 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         @param: master_secret Create from master secret, otherwise random.
         """
         master_secret = deserialize.bytes_str(master_secret)
-        bip32node = control.create_wallet(self.testnet)
+        bip32node = control.create_wallet(self.testnet,
+                                          master_secret=master_secret)
         return bip32node.wif()
 
     def validate_address(self, address):  # TODO test

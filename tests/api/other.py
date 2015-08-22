@@ -115,16 +115,6 @@ class TestCreateTx(unittest.TestCase):
         self.assertEqual(result, expected)
 
 
-class TestCreateKey(unittest.TestCase):
-
-    def setUp(self):
-        self.api = BtcTxStore(dryrun=True, testnet=True)
-
-    def test_create_key(self):
-        wif = self.api.create_key()
-        self.assertTrue(validate.is_wif_valid(wif, allowable_netcodes=['XTN']))
-
-
 class TestRetrieveTx(unittest.TestCase):
 
     def test_retrieve_tx_testnet(self):

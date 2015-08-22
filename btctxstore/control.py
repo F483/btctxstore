@@ -261,7 +261,7 @@ def create_wallet(testnet, master_secret=b""):
         master_secret = os.urandom(256)
     assert(isinstance(master_secret, bytes))
     netcode = 'XTN' if testnet else 'BTC'
-    return BIP32Node.from_master_secret(os.urandom(64), netcode=netcode)
+    return BIP32Node.from_master_secret(master_secret, netcode=netcode)
 
 
 def _encode_varint(value):
