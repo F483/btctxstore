@@ -25,13 +25,26 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    #####################
-    # wif and addresses #
-    #####################
+    ###############################
+    # wallets, keys and addresses #
+    ###############################
 
-    def create_key(self):
-        """Create new private key and return in wif format."""
-        bip32node = control.create_key(self.testnet)
+    def create_wallet(self, master_secret=b""):
+        """Create a BIP0032-style hierarchical wallet.
+
+        @param: master_secret Create from master secret, otherwise random.
+        """
+        master_secret = deserialize.bytes_str(master_secret)
+        bip32node = control.create_wallet(self.testnet)
+        return bip32node.hwif()
+
+    def create_key(self, master_secret=b""):
+        """Create new private key and return in wif format.
+        
+        @param: master_secret Create from master secret, otherwise random.
+        """
+        master_secret = deserialize.bytes_str(master_secret)
+        bip32node = control.create_wallet(self.testnet)
         return bip32node.wif()
 
     def validate_address(self, address):  # TODO test

@@ -32,10 +32,10 @@ def unicode_str(string):
     return string
 
 
-def string(s):
-    if type(s) not in [type("string"), type(u"unicode")]:
+def bytes_str(s):
+    if type(s) not in [type("string"), type(b"bytes"), type(u"unicode")]:
         raise exceptions.InvalidInput("Must be a string!")
-    if type(s) != type("string"):  # python 2 unicode strings ...
+    if not isinstance(s, bytes):
         return s.encode('utf-8')
     return s
 
@@ -87,7 +87,7 @@ def txid(txhash):
 
 
 def address(testnet, address):
-    address = string(address)
+    address = unicode_str(address)
     netcode = 'XTN' if testnet else 'BTC'
     if not validate.is_address_valid(address, allowable_netcodes=[netcode]):
         raise exceptions.InvalidAddress(address)
@@ -147,7 +147,7 @@ def secret_exponents(testnet, wifs):
 
 
 def key(testnet, wif):
-    wif = string(wif)
+    wif = unicode_str(wif)
     netcode = 'XTN' if testnet else 'BTC'
     if not validate.is_wif_valid(wif, allowable_netcodes=[netcode]):
         raise exceptions.InvalidWif(wif)
