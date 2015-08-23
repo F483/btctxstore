@@ -26,10 +26,12 @@ from . import common
 # TODO use apigen when it supports python3
 
 
-def unicode_str(string):
-    if type(string) != type(u"unicode"):
-        raise exceptions.InvalidInput("String must be a unicode string!")
-    return string
+def unicode_str(s):
+    if type(s) not in [type("string"), type(b"bytes"), type(u"unicode")]:
+        raise exceptions.InvalidInput("Must be a string!")
+    if isinstance(s, bytes):
+        return s.decode('utf-8')
+    return s
 
 
 def bytes_str(s):

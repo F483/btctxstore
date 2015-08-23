@@ -219,18 +219,6 @@ class TestRetrieve(unittest.TestCase):
         self.assertRaises(exceptions.NoNulldataOutput, callback)
 
 
-class TestGetAddress(unittest.TestCase):
-
-    def setUp(self):
-        self.api = BtcTxStore(dryrun=True, testnet=True)
-
-    def test_get_address(self):
-        wif = fixtures["wallet"]["wif"]
-        result = self.api.get_address(wif)
-        expected = fixtures["wallet"]["address"]
-        self.assertEqual(result, expected)
-
-
 class TestVerifySignature(unittest.TestCase):
 
     def setUp(self):

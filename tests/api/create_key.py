@@ -38,6 +38,8 @@ class TestCreateKey(unittest.TestCase):
         b = self.api.create_key(master_secret=b"foo")
         c = self.api.create_key(master_secret=u"foo")
         self.assertEqual(a, b, c)
+        self.assertTrue(self.api.create_key(master_secret="üöä") != None)
+        self.assertTrue(self.api.create_key(master_secret=u"üöä") != None)
 
         # incorrect types
         def callback():
@@ -49,6 +51,9 @@ class TestCreateKey(unittest.TestCase):
         def callback():
             self.api.create_key(master_secret=object())
         self.assertRaises(exceptions.InvalidInput, callback)
+
+    def test_standards_compliant(self):
+        pass # FIXME check generated against expected output from 3rd parties
 
 
 if __name__ == '__main__':
