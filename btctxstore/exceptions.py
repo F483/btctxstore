@@ -38,6 +38,12 @@ class InvalidWif(InvalidInput):
         super(InvalidWif, self).__init__("Invalid wif '%s'!" % wif)
 
 
+class InvalidHWIF(InvalidInput):
+
+    def __init__(self, hwif):
+        super(InvalidHWIF, self).__init__("Invalid hwif '%s'!" % hwif)
+
+
 class InsufficientFunds(Exception):
 
     def __init__(self, required, available):

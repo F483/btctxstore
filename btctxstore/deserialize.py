@@ -156,3 +156,17 @@ def key(testnet, wif):
 
 def keys(testnet, wifs):
     return list(map(lambda wif: key(testnet, wif), wifs))
+
+
+def wallet(testnet, hwif):
+    hwif = unicode_str(hwif)
+    netcode = 'XTN' if testnet else 'BTC'
+    if not validate.is_private_bip32_valid(hwif, allowable_netcodes=[netcode]):
+        raise exceptions.InvalidHWIF(hwif)
+    return Key.from_text(hwif)
+
+
+def wallets(testnet, hwifs):
+    return list(map(lambda hwif: wallet(testnet, hwif), hwifs))
+
+

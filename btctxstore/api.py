@@ -39,6 +39,10 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
                                           master_secret=master_secret)
         return bip32node.hwif(as_private=True)
 
+    def get_key(self, hwif):  # TODO add optional path
+        bip32node = deserialize.wallet(self.testnet, hwif)
+        return bip32node.wif()
+
     def create_key(self, master_secret=b""):
         """Create new private key and return in wif format.
         
