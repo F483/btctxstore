@@ -25,9 +25,9 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         else:
             self.service = InsightService("https://insight.bitpay.com/")
 
-    ###############################
-    # wallets, keys and addresses #
-    ###############################
+    ###########
+    # wallets #
+    ###########
 
     def create_wallet(self, master_secret=b""):
         """Create a BIP0032-style hierarchical wallet.
@@ -39,7 +39,18 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
                                           master_secret=master_secret)
         return bip32node.hwif(as_private=True)
 
-    def get_key(self, hwif):  # TODO add optional path
+    def validate_wallet(self, hwif):
+        try:
+            deserialize.wallet(self.testnet, hwif)
+            return True
+        except exceptions.InvalidInput:
+            return False
+
+    ########
+    # keys #
+    ########
+
+    def get_key(self, hwif):  # TODO add optional path for sub keys
         bip32node = deserialize.wallet(self.testnet, hwif)
         return bip32node.wif()
 
@@ -53,20 +64,24 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
                                           master_secret=master_secret)
         return bip32node.wif()
 
-    def validate_address(self, address):  # TODO test
+    def validate_key(self, wif):  # TODO test
         try:
-            deserialize.address(self.testnet, address)
+            deserialize.key(self.testnet, wif)
             return True
         except exceptions.InvalidInput:
             return False
+
+    #############
+    # addresses #
+    #############
 
     def get_address(self, wif):
         """Return bitcoin address for given wallet. """
         return deserialize.key(self.testnet, wif).address()
 
-    def validate_key(self, wif):  # TODO test
+    def validate_address(self, address):  # TODO test
         try:
-            deserialize.key(self.testnet, wif)
+            deserialize.address(self.testnet, address)
             return True
         except exceptions.InvalidInput:
             return False
