@@ -141,7 +141,6 @@ class TestGetUtxos(unittest.TestCase):
         address = fixtures["wallet"]["address"]
         expected = fixtures["getutxos"]["expected"]
         result = self.api.retrieve_utxos([address])
-        print("RESULT", result)
         self.assertEqual(result, expected)
 
 

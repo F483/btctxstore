@@ -19,10 +19,10 @@ from btctxstore import services
 class BtcTxStore():  # TODO use apigen when ported to python 3
     """Bitcoin nulldata output io library."""
 
-    def __init__(self, testnet=False, dryrun=False):
+    def __init__(self, testnet=False, dryrun=False, service="automatic"):
         self.testnet = deserialize.flag(testnet)
         self.dryrun = deserialize.flag(dryrun)
-        self.service = services.select("blockexplorer", testnet=testnet,
+        self.service = services.select(service, testnet=testnet,
                                        dryrun=dryrun)
 
     ###########
