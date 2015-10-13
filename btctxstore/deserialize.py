@@ -23,7 +23,7 @@ from . import common
 
 
 # TODO decorator to validate all io json serializable
-# TODO use apigen when it supports python3
+# TODO put non btctxstore specific things in own project
 
 
 def unicode_str(s):

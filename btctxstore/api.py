@@ -6,12 +6,12 @@
 from __future__ import print_function
 from __future__ import unicode_literals
 import binascii
-from . import serialize
-from . import deserialize
-from . import control
-from . import exceptions
-from . import common
-from . insight import InsightService  # XXX rm when added to pycoin
+from btctxstore import serialize
+from btctxstore import deserialize
+from btctxstore import control
+from btctxstore import exceptions
+from btctxstore import common
+from btctxstore import services
 
 
 class BtcTxStore():  # TODO use apigen when ported to python 3
@@ -20,10 +20,8 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
     def __init__(self, testnet=False, dryrun=False):
         self.testnet = deserialize.flag(testnet)
         self.dryrun = deserialize.flag(dryrun)
-        if self.testnet:
-            self.service = InsightService("https://test-insight.bitpay.com/")
-        else:
-            self.service = InsightService("https://insight.bitpay.com/")
+        self.service = services.select("insight", testnet=testnet,
+                                       dryrun=dryrun)
 
     ###########
     # wallets #

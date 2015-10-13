@@ -15,6 +15,13 @@ MAX_NULLDATA = 40
 
 
 def chunks(items, size):
+    """ Split list into chunks of the given size.
+    Original order is preserved.
+
+    Example:
+        > chunks([1,2,3,4,5,6,7,8], 3)
+        [[1, 2, 3], [4, 5, 6], [7, 8]]
+    """
     return [items[i:i+size] for i in range(0, len(items), size)]
 
 
