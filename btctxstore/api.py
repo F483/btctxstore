@@ -5,6 +5,8 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
+
+
 import binascii
 from btctxstore import serialize
 from btctxstore import deserialize
@@ -20,7 +22,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
     def __init__(self, testnet=False, dryrun=False):
         self.testnet = deserialize.flag(testnet)
         self.dryrun = deserialize.flag(dryrun)
-        self.service = services.select("insight", testnet=testnet,
+        self.service = services.select("blockexplorer", testnet=testnet,
                                        dryrun=dryrun)
 
     ###########

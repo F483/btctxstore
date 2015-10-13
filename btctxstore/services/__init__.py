@@ -3,12 +3,19 @@
 # License: MIT (see LICENSE file)
 
 
-from btctxstore.services.insight import InsightService
+from btctxstore.services.insight import Insight
+from btctxstore.services.blockexplorer import BlockExplorer
+
+
+#from btctxstore.services.blockchaininfo import BlockchainInfo
+# blockchain.info removed because it doesnt accept transaction with OP_RETURN 
 
 
 def select(name, testnet=False, dryrun=False):
     service_dict = {  # { "name" : (class, testnet_supported), ... }
-        "insight": (InsightService, True),
+        "insight": (Insight, True),
+        "blockexplorer": (BlockExplorer, True),
+        #"blockchain.info": (BlockchainInfo, False),
     }
     service_class, testnet_supported = service_dict.get(name, (None, False))
     if service_class is None:

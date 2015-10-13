@@ -107,7 +107,7 @@
         },
         "beta": {
             "wifs": ["cUZfG8KJ3BrXneg2LjUX4VoMg76Fcgx6QDiAZj2oGbuw6da8Lzv1"],
-            "expected": "124b19edc78150d21e68d2d7dcc62223aad901823560c9eca853aa8438dd01f3"
+            "expected": "757a30e5452e71f7d266642f56b8ad4766081d52dd1dd3ae0589d90eac72141f"
         },
         "insufficient_funds": {
             "wifs": ["cVJKkzZpEuVXvrM7Q5qza9W1zcU39DSFRDMoFmXMa9h7LARGTY7w"]

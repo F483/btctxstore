@@ -1,7 +1,6 @@
 import json
 import logging
 import io
-
 try:
     from urllib2 import HTTPError, urlopen
     from urllib import urlencode
@@ -9,7 +8,6 @@ except ImportError:
     from urllib.request import urlopen
     from urllib.error import HTTPError
     from urllib.parse import urlencode
-
 from pycoin.block import BlockHeader
 from pycoin.convention import btc_to_satoshi
 from pycoin.encoding import double_sha256
@@ -25,10 +23,11 @@ _log = logging.getLogger(__name__)
 # TODO provide support to insight API servers
 # see also https://github.com/bitpay/insight-api
 
-class InsightService(BlockchainService):
+
+class Insight(BlockchainService):
 
     def __init__(self, testnet=False, dryrun=False):
-        super(InsightService, self).__init__(testnet=testnet, dryrun=dryrun)
+        super(Insight, self).__init__(testnet=testnet, dryrun=dryrun)
         if testnet:
             base_url = "https://test-insight.bitpay.com"
         else:
@@ -90,12 +89,6 @@ class InsightService(BlockchainService):
             prev_index = u.get("vout")
             spendable = Spendable(value, script, prev_hash, prev_index)
             spendables.append(spendable)
-        return spendables
-
-    def spendables_for_addresses(self, bitcoin_addresses):
-        spendables = []
-        for addr in bitcoin_addresses:
-            spendables.extend(self.spendables_for_address(addr))
         return spendables
 
     def send_tx(self, tx):
