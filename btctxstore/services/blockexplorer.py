@@ -44,11 +44,10 @@ class BlockExplorer(BlockchainService):
         data = urlencode(dict(rawtx=tx_as_hex)).encode("utf8")
         url = "%s/tx/send" % self.base_url
         try:
-            d = urlopen(url, data=data).read()
-            return d
+            return urlopen(url, data=data).read()
         except HTTPError as ex:
-            d = ex.read()
-            _log.error(repr(ex))
+            _log.exception("problem in send_tx %s", tx.id())
+            raise ex
 
     # TODO override spendables_for_addresses
     # api support multiple addresses per query

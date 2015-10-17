@@ -101,8 +101,7 @@ class Insight(BlockchainService):
         data = urlencode(dict(rawtx=tx_as_hex)).encode("utf8")
         URL = "%s/api/tx/send" % self.base_url
         try:
-            d = urlopen(URL, data=data).read()
-            return d
+            return urlopen(URL, data=data).read()
         except HTTPError as ex:
             _log.exception("problem in send_tx %s", tx.id())
             raise ex
