@@ -137,7 +137,7 @@ Operate on a BIP0032-style hierarchical deterministic wallet.
   wallet = api.create_wallet()
 
   # get WIF from wallet
-  wif = api.get_key(wallet))
+  wif = api.get_key(wallet)
 
   # to get the address do this
   address = api.get_address(wif)
