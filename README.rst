@@ -118,3 +118,27 @@ Split utxos of wallet unitil limit or max_outputs reached.
   limit = 10000000  # 0.1BTC
   txids = api.split_utxos(wif, limit)
   print(txids)
+
+=======
+Wallet
+=======
+
+Operate on a BIP0032-style hierarchical deterministic wallet.
+
+.. code:: python
+
+  from btctxstore import BtcTxStore
+
+  # use testnet and dont post tx to blockchain for example
+  api = BtcTxStore(testnet=True, dryrun=True)
+
+  # create wallet 
+  # https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
+  wallet = api.create_wallet()
+
+  # get WIF from wallet
+  wif = api.get_key(wallet))
+
+  # to get the address do this
+  address = api.get_address(wif)
+
