@@ -280,7 +280,7 @@ def _add_recovery_params(i, compressed, sigdata):
     params = 27  # signature parameters
     params += i  # add recovery parameter
     params += 4 if compressed else 0  # add compressed flag
-    return struct.pack(">B", params) + sigdata
+    return struct.pack(">B".encode('ascii'), params) + sigdata
 
 
 def sign_data(testnet, data, key):
