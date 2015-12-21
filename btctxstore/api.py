@@ -14,6 +14,7 @@ from btctxstore import control
 from btctxstore import exceptions
 from btctxstore import common
 from btctxstore import services
+from btctxstore import validate
 
 
 class BtcTxStore():  # TODO use apigen when ported to python 3
@@ -40,11 +41,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         return bip32node.hwif(as_private=True)
 
     def validate_wallet(self, hwif):
-        try:
-            deserialize.wallet(self.testnet, hwif)
-            return True
-        except exceptions.InvalidInput:
-            return False
+        return validate.wallet_network(hwif, self.testnet)
 
     ########
     # keys #
@@ -56,7 +53,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
 
     def create_key(self, master_secret=b""):
         """Create new private key and return in wif format.
-        
+
         @param: master_secret Create from master secret, otherwise random.
         """
         master_secret = deserialize.bytes_str(master_secret)
@@ -65,11 +62,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         return bip32node.wif()
 
     def validate_key(self, wif):  # TODO test
-        try:
-            deserialize.key(self.testnet, wif)
-            return True
-        except exceptions.InvalidInput:
-            return False
+        return validate.key_network(wif, self.testnet)
 
     #############
     # addresses #
@@ -80,11 +73,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         return deserialize.key(self.testnet, wif).address()
 
     def validate_address(self, address):  # TODO test
-        try:
-            deserialize.address(self.testnet, address)
-            return True
-        except exceptions.InvalidInput:
-            return False
+        return validate.address_network(address, self.testnet)
 
     ###############
     # transaction #

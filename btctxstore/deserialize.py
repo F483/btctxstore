@@ -7,6 +7,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
+import six
 import base64
 from pycoin.key import Key
 from pycoin.tx.Tx import Tx

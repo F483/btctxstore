@@ -5,6 +5,7 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
+import codecs
 from pycoin.encoding import from_long
 from pycoin.encoding import to_long
 from pycoin.encoding import byte_to_int
@@ -12,6 +13,10 @@ from pycoin.encoding import byte_to_int
 
 DUST_LIMIT = 548
 MAX_NULLDATA = 40
+
+
+def bytestoint(data):
+    return int(codecs.encode(data, 'hex_codec'), 16)
 
 
 def chunks(items, size):

@@ -28,7 +28,6 @@ from pycoin.tx.pay_to import build_hash160_lookup
 from pycoin.tx import SIGHASH_ALL
 from pycoin.tx.TxIn import TxIn
 from pycoin.key.BIP32Node import BIP32Node
-from . import util
 from . import modsqrt
 from . import deserialize
 from . import serialize
@@ -358,7 +357,7 @@ def verify_signature(testnet, address, sig, data):
         order = G.order()
         rsdata, r, s, i, compressed = _parse_signature(sig, order)
         digest = _bitcoin_message_hash(data)
-        e = util.bytestoint(digest)
+        e = common.bytestoint(digest)
 
         # recover public key
         Q = _recover_public_key(G, order, r, s, i, e)

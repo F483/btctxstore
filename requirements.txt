@@ -1,3 +1,4 @@
-pycoin == 0.52
-six == 1.9.0
-ecdsa == 0.13
+pycoin >= 0.52
+six >= 1.10.0
+ecdsa >= 0.13
+future >= 0.15.2

@@ -1,13 +1,9 @@
 import json
 import logging
 import io
-try:
-    from urllib2 import HTTPError, urlopen
-    from urllib import urlencode
-except ImportError:
-    from urllib.request import urlopen
-    from urllib.error import HTTPError
-    from urllib.parse import urlencode
+from future.moves.urllib.parse import urlparse, urlencode
+from future.moves.urllib.request import urlopen, Request
+from future.moves.urllib.error import HTTPError, URLError
 from pycoin.block import BlockHeader
 from pycoin.convention import btc_to_satoshi
 from pycoin.encoding import double_sha256
