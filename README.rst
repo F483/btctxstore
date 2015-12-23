@@ -26,6 +26,8 @@ A library to read/write data to bitcoin transactions as nulldata outputs.
 Installation
 ============
 
+Install btctxstore lib
+
 ::
 
   pip install btctxstore

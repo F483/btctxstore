@@ -12,8 +12,6 @@ import unittest
 from pycoin.key import validate
 from btctxstore import BtcTxStore
 from btctxstore import exceptions
-
-
 fixtures = json.load(open("tests/fixtures.json"))
 
 
@@ -85,7 +83,7 @@ class TestIO(unittest.TestCase):
         result = self.api.get_broadcast_message(rawtx)
         self.assertEqual(result["address"], sender_address)
         self.assertEqual(result["message"], message)
-        
+
         # check signature is valid
         hex_message = binascii.hexlify(result["message"].encode('utf-8'))
         valid_signature = self.api.verify_signature(result["address"],
@@ -217,51 +215,6 @@ class TestRetrieve(unittest.TestCase):
             txid = fixtures["retrieve"]["nonulldata_txid"]
             result = self.api.retrieve_nulldata(txid)
         self.assertRaises(exceptions.NoNulldataOutput, callback)
-
-
-class TestVerifySignature(unittest.TestCase):
-
-    def setUp(self):
-        self.api = BtcTxStore(dryrun=True, testnet=True)
-
-    def test_verify_positive(self):
-        _fixtures = fixtures["verify_signature"]["positive"]
-        address = _fixtures["address"]
-        signature = _fixtures["signature"]
-        data = binascii.hexlify(b"testmessage")
-        result = self.api.verify_signature(address, signature, data)
-        self.assertEqual(result, True)
-
-    def test_verify_incorrect_address(self):
-        _fixtures = fixtures["verify_signature"]["incorrect_address"]
-        address = _fixtures["address"]
-        signature = _fixtures["signature"]
-        data = binascii.hexlify(b"testmessage")
-        result = self.api.verify_signature(address, signature, data)
-        self.assertEqual(result, False)
-
-    def test_verify_incorrect_signature(self):
-        _fixtures = fixtures["verify_signature"]["incorrect_signature"]
-        address = _fixtures["address"]
-        signature = _fixtures["signature"]
-        data = binascii.hexlify(b"testmessage")
-        result = self.api.verify_signature(address, signature, data)
-        self.assertEqual(result, False)
-
-    def test_verify_incorrect_data(self):
-        _fixtures = fixtures["verify_signature"]["incorrect_data"]
-        address = _fixtures["address"]
-        signature = _fixtures["signature"]
-        data = binascii.hexlify(b"testmessagee")
-        result = self.api.verify_signature(address, signature, data)
-        self.assertEqual(result, False)
-
-    def test_verify_signature_params(self):
-        wif = "cSuT2J14dYbe1zvB5z5WTXeRcMbj4tnoKssAK1ZQbnX5HtHfW3bi"
-        data = binascii.hexlify(b"testmessage")
-        address = self.api.get_address(wif)
-        sig = "///////////////////////////////////////////////////////////////////////////////////////="
-        self.assertFalse(self.api.verify_signature(address, sig, data))
 
 
 class TestSignData(unittest.TestCase):

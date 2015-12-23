@@ -16,6 +16,8 @@ import math
 import zlib
 import binascii
 from ecdsa.curves import SECP256k1
+from pycoin.ecdsa.numbertheory import modular_sqrt
+from pycoin.ecdsa.numbertheory import inverse_mod
 from pycoin.serialize.bitcoin_streamer import stream_bc_int
 from pycoin.tx.Tx import Tx
 from pycoin.encoding import hash160_sec_to_bitcoin_address
@@ -28,7 +30,6 @@ from pycoin.tx.pay_to import build_hash160_lookup
 from pycoin.tx import SIGHASH_ALL
 from pycoin.tx.TxIn import TxIn
 from pycoin.key.BIP32Node import BIP32Node
-from . import modsqrt
 from . import deserialize
 from . import serialize
 from . import exceptions
@@ -315,13 +316,13 @@ def _recover_public_key(G, order, r, s, i, e):
 
     # 1.3 point from x
     alpha = (x * x * x + c.a() * x + c.b()) % c.p()
-    beta = modsqrt.modular_sqrt(alpha, c.p())
+    beta = modular_sqrt(alpha, c.p())
     y = beta if (beta - i) % 2 == 0 else c.p() - beta
 
     # 1.4 Check that nR is at infinity
     R = ecdsa.ellipticcurve.Point(c, x, y, order)
 
-    rInv = ecdsa.numbertheory.inverse_mod(r, order)  # r^-1
+    rInv = inverse_mod(r, order)  # r^-1
     eNeg = -e % order  # -e
 
     # 1.6 compute Q = r^-1 (sR - eG)

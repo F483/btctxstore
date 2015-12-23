@@ -51,6 +51,9 @@ setup: virtualenv
 	$(PIP) install $(USE_WHEEL) -r develop_requirements.txt
 
 
+install: setup
+	$(PY) setup.py install
+
 shell: setup
 	env/bin/ipython
 

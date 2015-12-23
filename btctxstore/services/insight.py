@@ -1,9 +1,9 @@
 import json
 import logging
 import io
-from future.moves.urllib.parse import urlparse, urlencode
-from future.moves.urllib.request import urlopen, Request
-from future.moves.urllib.error import HTTPError, URLError
+from future.moves.urllib.parse import urlencode
+from future.moves.urllib.request import urlopen
+from future.moves.urllib.error import HTTPError
 from pycoin.block import BlockHeader
 from pycoin.convention import btc_to_satoshi
 from pycoin.encoding import double_sha256
@@ -66,7 +66,7 @@ class Insight(BlockchainService):
     def get_tx(self, tx_hash):
         URL = "%s/api/rawtx/%s" % (self.base_url, b2h_rev(tx_hash))
         r = json.loads(urlopen(URL).read().decode("utf8"))
-        tx = Tx.tx_from_hex(r['rawtx'])
+        tx = Tx.from_hex(r['rawtx'])
         if tx.hash() == tx_hash:
             return tx
         return None

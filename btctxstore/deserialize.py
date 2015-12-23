@@ -7,7 +7,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 
-import six
 import base64
 from pycoin.key import Key
 from pycoin.tx.Tx import Tx
@@ -44,17 +43,17 @@ def bytes_str(s):
 
 
 def tx(rawtx):
-    return Tx.tx_from_hex(rawtx)
+    return Tx.from_hex(rawtx)
 
 
 def signedtx(rawtx):
     # FIXME validate tx is signed
-    return Tx.tx_from_hex(rawtx)
+    return Tx.from_hex(rawtx)
 
 
 def unsignedtx(rawtx):
     # FIXME validate tx is unsigned
-    return Tx.tx_from_hex(rawtx)
+    return Tx.from_hex(rawtx)
 
 
 def binary(hexdata):
@@ -171,5 +170,3 @@ def wallet(testnet, hwif):
 
 def wallets(testnet, hwifs):
     return list(map(lambda hwif: wallet(testnet, hwif), hwifs))
-
-
