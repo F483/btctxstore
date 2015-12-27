@@ -15,21 +15,9 @@ import ecdsa
 import math
 import zlib
 import binascii
-from ecdsa.curves import SECP256k1
-from pycoin.ecdsa.numbertheory import modular_sqrt
-from pycoin.ecdsa.numbertheory import inverse_mod
-from pycoin.serialize.bitcoin_streamer import stream_bc_int
-from pycoin.tx.Tx import Tx
-from pycoin.encoding import hash160_sec_to_bitcoin_address
-from pycoin.encoding import bitcoin_address_to_hash160_sec
-from pycoin.encoding import public_pair_to_hash160_sec
-from pycoin.encoding import double_sha256
-from pycoin.tx.script import tools
-from pycoin.serialize import h2b
-from pycoin.tx.pay_to import build_hash160_lookup
-from pycoin.tx import SIGHASH_ALL
-from pycoin.tx.TxIn import TxIn
+import pycoin
 from pycoin.key.BIP32Node import BIP32Node
+from ecdsa.curves import SECP256k1
 from . import deserialize
 from . import serialize
 from . import exceptions
@@ -38,18 +26,21 @@ from . import common
 
 SIZE_PREFIX_BYTES = 2
 
+
 # 6 byte data type keys to reduce chance of collision with random data
 BROADCAST_MESSAGE_KEY_VERSON_01 = 'b220185f49e7'
 
 
 def _address_to_hash160(testnet, address):
     prefix = b'\x6f' if testnet else b"\0"
-    return bitcoin_address_to_hash160_sec(address, address_prefix=prefix)
+    return pycoin.encoding.bitcoin_address_to_hash160_sec(address,
+                                                          address_prefix=prefix)
 
 
 def _hash160_to_address(testnet, hash160):
     prefix = b'\x6f' if testnet else b"\0"
-    return hash160_sec_to_bitcoin_address(hash160, address_prefix=prefix)
+    return pycoin.encoding.hash160_sec_to_bitcoin_address(hash160,
+                                                          address_prefix=prefix)
 
 
 def add_broadcast_message(testnet, tx, message, sender_key,
@@ -176,7 +167,8 @@ def add_data_blob(tx, data, dust_limit=common.DUST_LIMIT):
 
 def _get_nulldata_output(tx):
     for index, out in enumerate(tx.txs_out):
-        if re.match("^OP_RETURN", tools.disassemble(out.script)):
+        disasm = pycoin.tx.script.tools.disassemble(out.script)
+        if re.match("^OP_RETURN", disasm):
             return index, out
     return None, None
 
@@ -200,20 +192,24 @@ def add_hash160data_output(tx, hash160data_txout):
 
 def get_hash160_data(tx, output_index):
     out = tx.txs_out[output_index]
-    return h2b(tools.disassemble(out.script)[18:58])
+    return pycoin.serialize.h2b(
+        pycoin.tx.script.tools.disassemble(out.script)[18:58]
+    )
 
 
 def get_nulldata(tx):
     index, out = _get_nulldata_output(tx)
     if not out:
         raise exceptions.NoNulldataOutput(tx)
-    data = h2b(tools.disassemble(out.script)[10:])
+    data = pycoin.serialize.h2b(
+        pycoin.tx.script.tools.disassemble(out.script)[10:]
+    )
     return index, data
 
 
 def create_tx(service, testnet, txins, txouts,
               lock_time=0, keys=None, publish=False):
-    tx = Tx(1, txins, txouts, lock_time)
+    tx = pycoin.tx.Tx(1, txins, txouts, lock_time)
     if keys:
         tx = sign_tx(service, testnet, tx, keys)
     if publish:
@@ -224,12 +220,13 @@ def create_tx(service, testnet, txins, txouts,
 def sign_tx(service, testnet, tx, keys):
     netcode = 'XTN' if testnet else 'BTC'
     secretexponents = list(map(lambda key: key.secret_exponent(), keys))
-    lookup = build_hash160_lookup(secretexponents)
+    lookup = pycoin.tx.pay_to.build_hash160_lookup(secretexponents)
     for txin_idx in range(len(tx.txs_in)):
         txin = tx.txs_in[txin_idx]
         utxo_tx = service.get_tx(txin.previous_hash)
         script = utxo_tx.txs_out[txin.previous_index].script
-        tx.sign_tx_in(lookup, txin_idx, script, SIGHASH_ALL, netcode=netcode)
+        tx.sign_tx_in(lookup, txin_idx, script,
+                      pycoin.tx.SIGHASH_ALL, netcode=netcode)
     return tx
 
 
@@ -245,14 +242,15 @@ def find_txins(service, addresses, amount):
     total = 0
     for spendable in spendables:
         total += spendable.coin_value
-        txins.append(TxIn(spendable.tx_hash, spendable.tx_out_index))
+        txins.append(pycoin.tx.TxIn(spendable.tx_hash, spendable.tx_out_index))
         if total >= amount:
             return txins, total
     return txins, total
 
 
 def _public_pair_to_address(testnet, public_pair, compressed):
-    hash160 = public_pair_to_hash160_sec(public_pair, compressed=compressed)
+    hash160 = pycoin.encoding.public_pair_to_hash160_sec(public_pair,
+                                                         compressed=compressed)
     return _hash160_to_address(testnet, hash160)
 
 
@@ -266,14 +264,14 @@ def create_wallet(testnet, master_secret=b""):
 
 def _encode_varint(value):
     f = io.BytesIO()
-    stream_bc_int(f, value)
+    pycoin.serialize.bitcoin_streamer.stream_bc_int(f, value)
     return f.getvalue()
 
 
 def _bitcoin_message_hash(data):
     prefix = b"\x18Bitcoin Signed Message:\n"
     varint = _encode_varint(len(data))
-    return double_sha256(prefix + varint + data)
+    return pycoin.encoding.double_sha256(prefix + varint + data)
 
 
 def _add_recovery_params(i, compressed, sigdata):
@@ -290,7 +288,8 @@ def sign_data(testnet, data, key):
     sigencode = ecdsa.util.sigencode_string
 
     # sign data
-    pk = ecdsa.SigningKey.from_secret_exponent(secretexponent, curve=SECP256k1)
+    pk = ecdsa.SigningKey.from_secret_exponent(secretexponent,
+                                               curve=ecdsa.curves.SECP256k1)
     sigdata = pk.sign_digest_deterministic(digest, hashfunc=hashlib.sha256,
                                            sigencode=sigencode)
 
@@ -309,6 +308,7 @@ def _recover_public_key(G, order, r, s, i, e):
     Key Recovery Operation".
     http://www.secg.org/sec1-v2.pdf
     """
+
     c = ecdsa.ecdsa.curve_secp256k1
 
     # 1.1 Let x = r + jn
@@ -316,13 +316,13 @@ def _recover_public_key(G, order, r, s, i, e):
 
     # 1.3 point from x
     alpha = (x * x * x + c.a() * x + c.b()) % c.p()
-    beta = modular_sqrt(alpha, c.p())
+    beta = pycoin.ecdsa.numbertheory.modular_sqrt(alpha, c.p())
     y = beta if (beta - i) % 2 == 0 else c.p() - beta
 
     # 1.4 Check that nR is at infinity
     R = ecdsa.ellipticcurve.Point(c, x, y, order)
 
-    rInv = inverse_mod(r, order)  # r^-1
+    rInv = pycoin.ecdsa.numbertheory.inverse_mod(r, order)  # r^-1
     eNeg = -e % order  # -e
 
     # 1.6 compute Q = r^-1 (sR - eG)
