@@ -9,7 +9,6 @@ import io
 import re
 import os
 import six
-import hashlib
 import struct
 import ecdsa
 import math
@@ -284,21 +283,20 @@ def _add_recovery_params(i, compressed, sigdata):
 def sign_data(testnet, data, key):
     address = key.address()
     digest = _bitcoin_message_hash(data)
-    secretexponent = key.secret_exponent()
-    sigencode = ecdsa.util.sigencode_string
+    secret_exponent = key.secret_exponent()
 
     # sign data
-    pk = ecdsa.SigningKey.from_secret_exponent(secretexponent,
-                                               curve=ecdsa.curves.SECP256k1)
-    sigdata = pk.sign_digest_deterministic(digest, hashfunc=hashlib.sha256,
-                                           sigencode=sigencode)
+    sig = pycoin.ecdsa.sign(pycoin.ecdsa.generator_secp256k1,
+                            secret_exponent, common.bytestoint(digest))
+    order = ecdsa.ecdsa.generator_secp256k1.order()
+    sigdata = ecdsa.util.sigencode_string(sig[0], sig[1], order)
 
     # add recovery params
     for i in range(4):
         for compressed in [True, False]:
-            sig = _add_recovery_params(i, compressed, sigdata)
-            if verify_signature(testnet, address, sig, data):
-                return sig
+            signature = _add_recovery_params(i, compressed, sigdata)
+            if verify_signature(testnet, address, signature, data):
+                return signature
     raise Exception("Failed to serialize signature!")
 
 
