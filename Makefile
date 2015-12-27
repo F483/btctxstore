@@ -7,6 +7,7 @@ WHEEL_DIR = /tmp/wheelhouse
 USE_WHEEL = --use-wheel --no-index --find-links=$(WHEEL_DIR)
 PIP = env/bin/pip
 PY = env/bin/python
+export PYCOIN_NATIVE = openssl
 
 
 help:
