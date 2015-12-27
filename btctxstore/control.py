@@ -16,7 +16,6 @@ import zlib
 import binascii
 import pycoin
 from pycoin.key.BIP32Node import BIP32Node
-from ecdsa.curves import SECP256k1
 from . import deserialize
 from . import serialize
 from . import exceptions
@@ -270,7 +269,8 @@ def _encode_varint(value):
 def _bitcoin_message_hash(data):
     prefix = b"\x18Bitcoin Signed Message:\n"
     varint = _encode_varint(len(data))
-    return pycoin.encoding.double_sha256(prefix + varint + data)
+    digest = pycoin.encoding.double_sha256(prefix + varint + data)
+    return common.bytestoint(digest)
 
 
 def _add_recovery_params(i, compressed, sigdata):
@@ -282,12 +282,12 @@ def _add_recovery_params(i, compressed, sigdata):
 
 def sign_data(testnet, data, key):
     address = key.address()
-    digest = _bitcoin_message_hash(data)
+    e = _bitcoin_message_hash(data)
     secret_exponent = key.secret_exponent()
 
     # sign data
     sig = pycoin.ecdsa.sign(pycoin.ecdsa.generator_secp256k1,
-                            secret_exponent, common.bytestoint(digest))
+                            secret_exponent, e)
     order = ecdsa.ecdsa.generator_secp256k1.order()
     sigdata = ecdsa.util.sigencode_string(sig[0], sig[1], order)
 
@@ -351,30 +351,28 @@ def _parse_signature(sig, order):
 def verify_signature(testnet, address, sig, data):
 
     try:
+        generator = pycoin.ecdsa.generator_secp256k1
+
         # parse sig data
         G = ecdsa.ecdsa.generator_secp256k1
         order = G.order()
         rsdata, r, s, i, compressed = _parse_signature(sig, order)
-        digest = _bitcoin_message_hash(data)
-        e = common.bytestoint(digest)
+        e = _bitcoin_message_hash(data)
 
         # recover public key
         Q = _recover_public_key(G, order, r, s, i, e)
-        pub = ecdsa.VerifyingKey.from_public_point(Q, curve=SECP256k1)
+        public_pair = [Q.x(), Q.y()]
 
-        # validate that recovered public key is correct
-        sigdecode = ecdsa.util.sigdecode_string
-        pub.verify_digest(rsdata, digest, sigdecode=sigdecode)
+        # verify signature
+        if not pycoin.ecdsa.verify(generator, public_pair, e, [r, s]):
+            return False
 
         # validate that recovered address is correct
-        public_pair = [Q.x(), Q.y()]
         recoveredaddress = _public_pair_to_address(testnet, public_pair,
                                                    compressed)
         return address == recoveredaddress
 
-    except AssertionError:  # _recover_public_key failed
-        return False
-    except exceptions.InvalidSignarureParameter:
+    except Exception:
         return False
 
 
