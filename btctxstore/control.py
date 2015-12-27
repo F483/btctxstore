@@ -284,12 +284,11 @@ def sign_data(testnet, data, key):
     address = key.address()
     e = _bitcoin_message_hash(data)
     secret_exponent = key.secret_exponent()
+    G = pycoin.ecdsa.generator_secp256k1
 
     # sign data
-    sig = pycoin.ecdsa.sign(pycoin.ecdsa.generator_secp256k1,
-                            secret_exponent, e)
-    order = ecdsa.ecdsa.generator_secp256k1.order()
-    sigdata = ecdsa.util.sigencode_string(sig[0], sig[1], order)
+    sig = pycoin.ecdsa.sign(G, secret_exponent, e)
+    sigdata = ecdsa.util.sigencode_string(sig[0], sig[1], G.order())
 
     # add recovery params
     for i in range(4):
@@ -307,7 +306,7 @@ def _recover_public_key(G, order, r, s, i, e):
     http://www.secg.org/sec1-v2.pdf
     """
 
-    c = ecdsa.ecdsa.curve_secp256k1
+    c = G.curve()
 
     # 1.1 Let x = r + jn
     x = r + (i // 2) * order
@@ -318,7 +317,7 @@ def _recover_public_key(G, order, r, s, i, e):
     y = beta if (beta - i) % 2 == 0 else c.p() - beta
 
     # 1.4 Check that nR is at infinity
-    R = ecdsa.ellipticcurve.Point(c, x, y, order)
+    R = pycoin.ecdsa.ellipticcurve.Point(c, x, y, order)
 
     rInv = pycoin.ecdsa.numbertheory.inverse_mod(r, order)  # r^-1
     eNeg = -e % order  # -e
@@ -351,10 +350,9 @@ def _parse_signature(sig, order):
 def verify_signature(testnet, address, sig, data):
 
     try:
-        generator = pycoin.ecdsa.generator_secp256k1
+        G = pycoin.ecdsa.generator_secp256k1
 
         # parse sig data
-        G = ecdsa.ecdsa.generator_secp256k1
         order = G.order()
         rsdata, r, s, i, compressed = _parse_signature(sig, order)
         e = _bitcoin_message_hash(data)
@@ -364,7 +362,7 @@ def verify_signature(testnet, address, sig, data):
         public_pair = [Q.x(), Q.y()]
 
         # verify signature
-        if not pycoin.ecdsa.verify(generator, public_pair, e, [r, s]):
+        if not pycoin.ecdsa.verify(G, public_pair, e, [r, s]):
             return False
 
         # validate that recovered address is correct
