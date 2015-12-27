@@ -4,22 +4,22 @@ python:
   - "3.3"
   - "3.4"
 
-# install dependencies, e.g. pip install -r requirements.txt
+env:
+  - PYCOIN_NATIVE=openssl
+
 install:
   - pip install coverage coveralls
 
-#before_script:
-#  - mkdir data
+before_script:
+  - python setup.py install
 
-# run tests, e.g. python setup.py test
 script:
+  - python examples/verify_speed.py
   - coverage run --source="btctxstore" setup.py test
 
-# run coverage
 after_success:
   - coveralls
 
-# post to slack
 notifications:
   slack: storjcommunity:TZfUO9ycY8R9UYwztWZTo0jk
   email: false

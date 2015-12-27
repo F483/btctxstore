@@ -33,6 +33,19 @@ Install btctxstore lib
   pip install btctxstore
 
 
+=========================
+Use fast native functions
+=========================
+
+There is experimental code that will call into OpenSSL for slow functions.
+To enable this, set (and export) environment variable PYCOIN_NATIVE=openssl.
+
+::
+
+  $ PYCOIN_NATIVE=openssl
+  $ export PYCOIN_NATIVE
+
+
 ================================
 storing data in nulldata outputs
 ================================
