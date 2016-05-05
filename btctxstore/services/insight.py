@@ -25,14 +25,14 @@ class Insight(BlockchainService):
     def __init__(self, testnet=False, dryrun=False):
         super(Insight, self).__init__(testnet=testnet, dryrun=dryrun)
         if testnet:
-            base_url = "https://test-insight.bitpay.com"
+            base_url = "https://test-insight.bitpay.com/api"
         else:
-            base_url = "https://insight.bitpay.com"
+            base_url = "https://insight.bitpay.com/api"
         self.base_url = base_url
 
     def get_blockchain_tip(self):
-        URL = "%s/api/status?q=getLastBlockHash" % self.base_url
-        d = urlopen(URL).read().decode("utf8")
+        url = "%s/status?q=getLastBlockHash" % self.base_url
+        d = urlopen(url).read().decode("utf8")
         r = json.loads(d)
         return h2b_rev(r.get("lastblockhash"))
 
@@ -40,8 +40,8 @@ class Insight(BlockchainService):
         return self.get_blockheader_with_transaction_hashes(block_hash)[0]
 
     def get_blockheader_with_transaction_hashes(self, block_hash):
-        URL = "%s/api/block/%s" % (self.base_url, b2h_rev(block_hash))
-        r = json.loads(urlopen(URL).read().decode("utf8"))
+        url = "%s/block/%s" % (self.base_url, b2h_rev(block_hash))
+        r = json.loads(urlopen(url).read().decode("utf8"))
         version = r.get("version")
         previous_block_hash = h2b_rev(r.get("previousblockhash"))
         merkle_root = h2b_rev(r.get("merkleroot"))
@@ -64,9 +64,9 @@ class Insight(BlockchainService):
         return header[0].height
 
     def get_tx(self, tx_hash):
-        URL = "%s/api/rawtx/%s" % (self.base_url, b2h_rev(tx_hash))
-        r = json.loads(urlopen(URL).read().decode("utf8"))
-        tx = Tx.from_hex(r['rawtx'])
+        url = "%s/rawtx/%s" % (self.base_url, b2h_rev(tx_hash))
+        result = json.loads(urlopen(url).read().decode("utf8"))
+        tx = Tx.from_hex(result['rawtx'])
         if tx.hash() == tx_hash:
             return tx
         return None
@@ -75,14 +75,14 @@ class Insight(BlockchainService):
         return self.get_tx(tx_hash).confirmation_block_hash
 
     def spendables_for_address(self, bitcoin_address):
-        URL = "%s/api/addr/%s/utxo" % (self.base_url, bitcoin_address)
-        r = json.loads(urlopen(URL).read().decode("utf8"))
+        url = "{0}/addr/{1}/utxo".format(self.base_url, bitcoin_address)
+        result = json.loads(urlopen(url).read().decode("utf8"))
         spendables = []
-        for u in r:
-            value = btc_to_satoshi(str(u.get("amount")))
-            script = h2b(u.get("scriptPubKey"))
-            prev_hash = h2b_rev(u.get("txid"))
-            prev_index = u.get("vout")
+        for utxo in result:
+            value = btc_to_satoshi(str(utxo["amount"]))
+            prev_index = utxo["vout"]
+            prev_hash = h2b_rev(utxo["txid"])
+            script = h2b(utxo["scriptPubKey"])
             spendable = Spendable(value, script, prev_hash, prev_index)
             spendables.append(spendable)
         return spendables
@@ -95,9 +95,9 @@ class Insight(BlockchainService):
         tx.stream(s)
         tx_as_hex = b2h(s.getvalue())
         data = urlencode(dict(rawtx=tx_as_hex)).encode("utf8")
-        URL = "%s/api/tx/send" % self.base_url
+        url = "%s/tx/send" % self.base_url
         try:
-            return urlopen(URL, data=data).read()
+            return urlopen(url, data=data).read()
         except HTTPError as ex:
             _log.exception("problem in send_tx %s", tx.id())
             raise ex
