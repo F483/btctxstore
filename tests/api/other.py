@@ -9,7 +9,6 @@ from __future__ import unicode_literals
 import json
 import binascii
 import unittest
-from pycoin.key import validate
 from btctxstore import BtcTxStore
 from btctxstore import exceptions
 fixtures = json.load(open("tests/fixtures.json"))
@@ -174,7 +173,7 @@ class TestStoreNulldata(unittest.TestCase):
         expected = fixtures["store_nulldata"]["beta"]["expected"]
         data = binascii.hexlify(b"github.com/F483/btctxstore")
         result = self.api.store_nulldata(data, wifs)
-        self.assertEqual(result, expected)
+        self.assertIn(result, expected)
 
     def test_store_nulldata_insufficient_funds(self):
         wifs = fixtures["store_nulldata"]["insufficient_funds"]["wifs"]
@@ -213,7 +212,7 @@ class TestRetrieve(unittest.TestCase):
     def test_retrieve_nothing(self):
         def callback():
             txid = fixtures["retrieve"]["nonulldata_txid"]
-            result = self.api.retrieve_nulldata(txid)
+            self.api.retrieve_nulldata(txid)
         self.assertRaises(exceptions.NoNulldataOutput, callback)
 
 
