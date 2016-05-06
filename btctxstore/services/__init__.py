@@ -7,10 +7,12 @@ from btctxstore.services.insight import Insight
 from btctxstore.services.blockexplorer import BlockExplorer
 from btctxstore.services.automatic import Automatic
 
+
 _all = {
     "insight": Insight,
     "blockexplorer": BlockExplorer,
 }
+
 
 def select(name, testnet=False, dryrun=False):
     service_class = _all.get(name)
@@ -20,4 +22,3 @@ def select(name, testnet=False, dryrun=False):
         raise Exception("Service {0} not found!".format(name))
     return Automatic(testnet=testnet, dryrun=dryrun,
                      service_classes=_all.values())
-

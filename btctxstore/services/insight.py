@@ -71,8 +71,10 @@ class Insight(BlockchainService):
             return tx
         return None
 
-    def get_tx_confirmation_block(self, tx_hash):
-        return self.get_tx(tx_hash).confirmation_block_hash
+    def confirms(self, txid):
+        url = "%s/tx/%s" % (self.base_url, b2h_rev(txid))
+        result = json.loads(urlopen(url).read().decode("utf8"))
+        return result.get("confirmations", 0)
 
     def spendables_for_address(self, bitcoin_address):
         url = "{0}/addr/{1}/utxo".format(self.base_url, bitcoin_address)
