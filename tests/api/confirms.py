@@ -6,11 +6,15 @@
 
 from __future__ import print_function
 from __future__ import unicode_literals
+import os
 import unittest
+from pycoin.serialize import b2h
 from btctxstore import BtcTxStore
 
 
 CONFIRMED = "6a26d2ecb67f27d1fa5524763b49029d7106e91e3cc05743073461a719776192"
+UNCONFIRMED = ""
+UNPUBLISHED = b2h(os.urandom(32))
 
 
 class TestConfirms(unittest.TestCase):
@@ -23,7 +27,11 @@ class TestConfirms(unittest.TestCase):
         self.assertGreater(confirms, 0)
 
     def test_unconfirmed(self):
-        pass
+        pass  # TODO find always unconfirmed tx and test
+
+    def test_unpublished(self):
+        confirms = self.api.confirms(UNPUBLISHED)
+        self.assertIsNone(confirms)
 
 
 if __name__ == '__main__':

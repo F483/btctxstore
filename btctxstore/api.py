@@ -326,6 +326,7 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
     ########
 
     def confirms(self, txid):
+        """Returns number of confirms or None if unpublished."""
         txid = deserialize.txid(txid)
         return self.service.confirms(txid)
 

@@ -72,9 +72,15 @@ class Insight(BlockchainService):
         return None
 
     def confirms(self, txid):
-        url = "%s/tx/%s" % (self.base_url, b2h_rev(txid))
-        result = json.loads(urlopen(url).read().decode("utf8"))
-        return result.get("confirmations", 0)
+        try:
+            url = "%s/tx/%s" % (self.base_url, b2h_rev(txid))
+            result = json.loads(urlopen(url).read().decode("utf8"))
+            return result.get("confirmations", 0)
+        except HTTPError as ex:
+            if ex.code == 404:  # unpublished tx
+                return None
+            else:
+                raise ex
 
     def spendables_for_address(self, bitcoin_address):
         url = "{0}/addr/{1}/utxo".format(self.base_url, bitcoin_address)
