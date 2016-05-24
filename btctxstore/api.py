@@ -330,6 +330,10 @@ class BtcTxStore():  # TODO use apigen when ported to python 3
         txid = deserialize.txid(txid)
         return self.service.confirms(txid)
 
+    def get_transactions(self, address):
+        address = deserialize.address(self.testnet, address)
+        return self.service.transactions_for_address(address)
+
     def split_utxos(self, wif, limit, fee=10000, max_outputs=100):
         """Split utxos of <wif> unitil <limit> or <max_outputs> reached."""
         key = deserialize.key(self.testnet, wif)

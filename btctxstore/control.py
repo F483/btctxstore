@@ -20,6 +20,7 @@ from . import deserialize
 from . import serialize
 from . import exceptions
 from . import common
+from pycoin.tx.script import tools
 
 
 SIZE_PREFIX_BYTES = 2
@@ -190,18 +191,18 @@ def add_hash160data_output(tx, hash160data_txout):
 
 def get_hash160_data(tx, output_index):
     out = tx.txs_out[output_index]
-    return pycoin.serialize.h2b(
-        pycoin.tx.script.tools.disassemble(out.script)[18:58]
-    )
+    opcode, data, pc = tools.get_opcode(out.script, 0)
+    opcode, data, pc = tools.get_opcode(out.script, pc)
+    opcode, data, pc = tools.get_opcode(out.script, pc)
+    return data
 
 
 def get_nulldata(tx):
     index, out = _get_nulldata_output(tx)
     if not out:
         raise exceptions.NoNulldataOutput(tx)
-    data = pycoin.serialize.h2b(
-        pycoin.tx.script.tools.disassemble(out.script)[10:]
-    )
+    opcode, data, pc = tools.get_opcode(out.script, 0)
+    opcode, data, pc = tools.get_opcode(out.script, pc)
     return index, data
 
 

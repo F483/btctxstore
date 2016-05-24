@@ -87,3 +87,17 @@ class Automatic(BlockchainService):
             _log.error(msg.format(name, repr(e)))
             other_service = self._select_other_service(service)
             return other_service.spendables_for_address(bitcoin_address)
+
+    def transactions_for_address(self, bitcoin_address):
+        service = self._select_service()
+        try:
+            return service.transactions_for_address(bitcoin_address)
+        except Exception as e:
+            # try only once with another service
+            # if two independant services fail something is wrong
+            # there are also only two working services right now ...
+            name = service.__class__.__name__
+            msg = "Service call to {0} failed: {1}"
+            _log.error(msg.format(name, repr(e)))
+            other_service = self._select_other_service(service)
+            return other_service.transactions_for_address(bitcoin_address)

@@ -95,6 +95,14 @@ class Insight(BlockchainService):
             spendables.append(spendable)
         return spendables
 
+    def transactions_for_address(self, bitcoin_address):
+        url = "{0}/txs/?address={1}".format(self.base_url, bitcoin_address)
+        result = json.loads(urlopen(url).read().decode("utf8"))
+        transactions = []
+        for tx in result["txs"]:
+            transactions.append(tx["txid"])
+        return transactions
+
     def send_tx(self, tx):
         if self.dryrun:
             return

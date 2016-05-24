@@ -22,6 +22,10 @@ class BlockchainService(object):
         """TODO doc string"""
         raise NotImplementedError()
 
+    def transactions_for_address(self, bitcoin_address):
+        """TODO doc string"""
+        raise NotImplementedError()
+
     def confirms(self, txid):
         """TODO doc string"""
         raise NotImplementedError()
