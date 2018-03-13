@@ -1,4 +1,4 @@
-pycoin >= 0.52
+pycoin == 0.60
 six >= 1.10.0
 ecdsa >= 0.13
 future >= 0.15.2
