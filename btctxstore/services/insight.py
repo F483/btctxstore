@@ -66,7 +66,7 @@ class Insight(BlockchainService):
     def get_tx(self, tx_hash):
         url = "%s/rawtx/%s" % (self.base_url, b2h_rev(tx_hash))
         result = json.loads(urlopen(url).read().decode("utf8"))
-        tx = Tx.from_hex(result['rawtx'])
+        tx = Tx.Tx.from_hex(result['rawtx'])
         if tx.hash() == tx_hash:
             return tx
         return None
