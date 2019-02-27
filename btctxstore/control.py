@@ -208,7 +208,7 @@ def get_nulldata(tx):
 
 def create_tx(service, testnet, txins, txouts,
               lock_time=0, keys=None, publish=False):
-    tx = pycoin.tx.Tx(1, txins, txouts, lock_time)
+    tx = pycoin.tx.Tx.Tx(1, txins, txouts, lock_time)
     if keys:
         tx = sign_tx(service, testnet, tx, keys)
     if publish:

@@ -8,7 +8,7 @@ from __future__ import unicode_literals
 import codecs
 from pycoin.encoding import from_long
 from pycoin.encoding import to_long
-from pycoin.encoding import byte_to_int
+from pycoin.encoding import byte2int
 
 
 DUST_LIMIT = 548
@@ -40,4 +40,4 @@ def num_to_bytes(bytes_len, v):  # copied from pycoin.encoding.to_bytes_32
 def num_from_bytes(bytes_len, v):  # copied from pycoin.encoding.to_bytes_32
     if len(v) != bytes_len:
         raise ValueError("input to num_from_bytes is wrong length")
-    return to_long(256, byte_to_int, v)[0]
+    return to_long(256, byte2int, v)[0]
