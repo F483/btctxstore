@@ -49,7 +49,7 @@ class Insight(BlockchainService):
         difficulty = int(r.get("bits"), 16)
         nonce = int(r.get("nonce"))
         tx_hashes = [h2b_rev(tx_hash) for tx_hash in r.get("tx")]
-        blockheader = BlockHeader(version, previous_block_hash, merkle_root,
+        blockheader = Block.as_blockheader(version, previous_block_hash, merkle_root,
                                   timestamp, difficulty, nonce)
         if blockheader.hash() != block_hash:
             return None, None
